@@ -84,6 +84,18 @@
 
   .meta-line { font-size: 11.5px; color: #8a8371; margin-top: 12px; letter-spacing: .02em; }
 
+  select#hierarchySelect {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    border: 1px solid #33301f;
+    border-radius: 9px;
+    outline: none;
+    background: #0f0d0a;
+    color: #f2ede1;
+  }
+  select#hierarchySelect:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+
   .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .chip {
     background: #1c1811;
@@ -139,6 +151,8 @@
   .score-mid { color: #d4af37; font-weight: 700; }
   .score-bad { color: #f87171; font-weight: 700; }
 
+  .cell-alert { background: rgba(248,113,113,.22); color: #fecaca; font-weight: 700; }
+
   .hint { font-size: 12px; color: #6f6a5a; margin-top: 8px; }
 
   .month-title { font-size: 14px; font-weight: 700; color: #f0d78a; }
@@ -171,12 +185,23 @@
       </div>
     </div>
 
+    <div class="card">
+      <div class="section-label">Buscar por jerarquía</div>
+      <select id="hierarchySelect">
+        <option value="">— Elige un responsable y técnico —</option>
+      </select>
+    </div>
+
     <div id="results"></div>
   </div>
 
 <script>
 const FILE_ID = "1UWfgzyAlu6sK6VLKP0Qoqhs31UfRju1J-zqaR8yuUng";
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+// Jerarquía (solo nombre, código, responsable y provincia — sin DNI, dirección, teléfono ni email).
+// Tomada de "2. CUADRANTE AURUM BC SECURITY SL" el 15/07/2026.
+const HIERARCHY_DATA = [{"nivel":"1 PM","jde":"CM9651","matricula":"BA8006","tecnico":"Blas Alvarez Melendez","provincia":"MÁLAGA"},{"nivel":"1 PM","jde":"CM9651","matricula":"CM9651","tecnico":"Cesar Eduardo Trujillo Di Biase","provincia":"MADRID"},{"nivel":"2 ADM","jde":"CM9651","matricula":"EQ5303","tecnico":"Estibaliz Balmaseda Russian","provincia":"MADRID"},{"nivel":"2 ADM","jde":"CM9651","matricula":"262876","tecnico":"Mercedes Teresa Savarino Sainz","provincia":"VALENCIA"},{"nivel":"2 ADM","jde":"CM9651","matricula":"294138","tecnico":"Denisa Carina Mignea","provincia":"VALENCIA"},{"nivel":"3 COORD","jde":"CM9651","matricula":"GD5381","tecnico":"Gustavo Alejandro Perez Villamil","provincia":"BARCELONA"},{"nivel":"3 COORD","jde":"CM9651","matricula":"JR9426","tecnico":"Jose Luis Osorio Sainz","provincia":"MADRID"},{"nivel":"3 COORD","jde":"CM9651","matricula":"JN4767","tecnico":"Jaime Arturo Almeida Shaigua","provincia":"BARCELONA"},{"nivel":"4 JDE","jde":"273371","matricula":"273371","tecnico":"Armando Jose Madrid Ruiz","provincia":"MADRID"},{"nivel":"4 JDE","jde":"286800","matricula":"286800","tecnico":"Ezequiel Pugliese","provincia":"BARCELONA"},{"nivel":"4 JDE","jde":"274629","matricula":"274629","tecnico":"Fernando David Alves Andujar","provincia":"VALENCIA"},{"nivel":"4 JDE","jde":"Q29994","matricula":"Q29994","tecnico":"Hefranyer Humberto Chacon Tovar","provincia":"MADRID"},{"nivel":"4 JDE","jde":"273379","matricula":"273379","tecnico":"Maikel Ramon Gutierrez Niño","provincia":"VALENCIA"},{"nivel":"4 JDE","jde":"Q28224","matricula":"Q28224","tecnico":"Manuel Enrique Sequeira Avila","provincia":"MADRID"},{"nivel":"4 JDE","jde":"239831","matricula":"239831","tecnico":"Pablo Marques Peñalver","provincia":"MURCIA"},{"nivel":"4 JDE","jde":"Q14001","matricula":"Q14001","tecnico":"Carlos Enrique Pernas Ortiz","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"315166","tecnico":"Adrian Arribas Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"279300","tecnico":"Alexander Xavier Hernandez Luque","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"313824","tecnico":"Alexis Alejandro Silva Silva","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"299538","tecnico":"Amado Rafael Lopez Rodriguez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"247470","tecnico":"Bernardo Antonio Marquez Houtmann","provincia":"MALLORCA"},{"nivel":"5 TEC","jde":"273379","matricula":"294898","tecnico":"Bogdan Sebastian Alves Calderon","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"333156","tecnico":"Brian Anthony Torres Fernandez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"247472","tecnico":"Carlos Enrique Marcano Morales","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"353969","tecnico":"Carlos Luis Sanchez Russo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"296625","tecnico":"Daniel Alejandro Laynez Angulo","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"338851","tecnico":"Daniel Alfonso Kolman Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"Q30909","tecnico":"Daniel Enrique Gonzalez Galavis","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"DY9618","tecnico":"Darwing Jose Ojeda Castillo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"336070","tecnico":"Edixon Jose Gonzalez Muñoz","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"290754","tecnico":"Ericsson Misael Pereira Caruso","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"334203","tecnico":"Giancarlo Izquierdo Mireles","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"286596","tecnico":"Henry Adrian Garcia Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"333528","tecnico":"Irving Daniel Villalobos Gonzalez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"JC5863","tecnico":"Jesus Marques Peñalver","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"308264","tecnico":"Jose Antonio Valero Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"297373","tecnico":"Jose Daniel Spatuzzi Sanchez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"307113","tecnico":"Jose David Vergara Lopez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"336469","tecnico":"Jose Manuel Larez Salazar","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"301653","tecnico":"Juan Manuel Rodriguez Martinez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"318921","tecnico":"Junior Robert Moreno Martinez","provincia":"CASTELLoN"},{"nivel":"5 TEC","jde":"273379","matricula":"339251","tecnico":"Luis Antonio De Azevedo Mendoza","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"306055","tecnico":"Luis Augusto Nuñez Pacheco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"338071","tecnico":"Luis Enrique Goncalves Bencomo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"293800","tecnico":"Luis Jose Rovario Fermin","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"314303","tecnico":"Marco Cavallera Carvalho","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"276085","tecnico":"Natasha Emperatriz Adobbato Rojas","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"333158","tecnico":"Paloma Velez Gonzalez","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"339886","tecnico":"Rafael Carmelo Osorio Sainz","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"314302","tecnico":"Ramon Edilio Varela","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"334204","tecnico":"Robert Armando Martinez Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"340320","tecnico":"Ronaldo Jose Shigueto Franco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"312756","tecnico":"Victor Gabriel Morales Lopez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"337583","tecnico":"Yelwuinger Yonfrander Rodriguez De Carvalho","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"312440","tecnico":"Yonathan Yoel Diaz Contreras","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"302786","tecnico":"Christian Alexander Reyna Serrano","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"343017","tecnico":"Hugo Alejandro Ledezma Sanllorente","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"336919","tecnico":"Jeyson Daniel Gainza Jaure","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"310655","tecnico":"Joan Francisco Valero Casanova","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"303760","tecnico":"Jose Vicente Toro Hernandez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"277029","tecnico":"Juan Victor Gonzalez Garcia","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"239831","matricula":"338045","tecnico":"Vincenzo Agostinho Velardita de Jesus Jardim","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356426","tecnico":"Abraham Jose Perez Naborre","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"356427","tecnico":"Andres Enrique Riccio Paredes","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356431","tecnico":"Armando Jose Martinez Castillo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"301193","tecnico":"Arturo Enrique Briceño Balza","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356432","tecnico":"Carlos Augusto Chipman Briceño","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356434","tecnico":"Carlos Jose Vargas Alvarez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q14001","matricula":"317492","tecnico":"Edwin Giovanny Tituaña Cayambe","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q29994","matricula":"310656","tecnico":"Eliyau Chocron Perez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356440","tecnico":"Hadid Jose Alvarez Flautes","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356441","tecnico":"Hector Rafael Perez Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"356443","tecnico":"Jesus Eduardo Monzon Oviedo","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"356444","tecnico":"Johann Alejandro Dean Vilchez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356445","tecnico":"Jose Manuel Casas Vilchez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356448","tecnico":"Juan Carlos Hernandez Villegas","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"317024","tecnico":"Luis Alejandro Carmona Celis","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356452","tecnico":"Luis Alfredo Peña Camacaro","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"339887","tecnico":"Manuel Antonio Marquez Calero","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356463","tecnico":"Maria Alejandra Perez Reyes","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"356455","tecnico":"Robert Xavier Tamayo Hernandez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"274629","matricula":"295342","tecnico":"Roberto Gonzalez Guerrero","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356458","tecnico":"Rodrigo Ignacio Fusco Zeiden","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356460","tecnico":"William Alexander Nieto Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356980","tecnico":"Reyner Jesus Gonzalez Valderrama","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"286106","tecnico":"Enzo Guccione Kert","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"357636","tecnico":"Franco Maximiliano Maffioni","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"357633","tecnico":"Krystiam Jose Maicabare Francisco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"357641","tecnico":"Matheo Ghio","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"273379","matricula":"337588","tecnico":"Carvic Ordoñez Salas","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"274629","matricula":"338399","tecnico":"Egler Jose Cadena Serpa","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"239831","matricula":"358721","tecnico":"Jose Alexander Garcia Rojas","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"358717","tecnico":"Jose Francisco Martinez Rubio","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"RR6743","tecnico":"Rafael Jose Marin Hidalgo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"358719","tecnico":"Ramon Esteban Garcia Atehortua","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"Q30910","tecnico":"Claudio Evaristo Febres Demartini","provincia":"TARRAGONA"},{"nivel":"5 TEC","jde":"286800","matricula":"294255","tecnico":"Daniel Ricardo Rocha Castillo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"303768","tecnico":"Darwin Alexander Primera Wefer","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"291125","tecnico":"German Maximiliano Von Scheidt","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"342074","tecnico":"Mario Jesus Coba Rodriguez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273371","matricula":"359191","tecnico":"Rafael Augusto La Salvia Boccia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"359193","tecnico":"Ricardo Alberto De Jesus Sardinha","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q14001","matricula":"359189","tecnico":"Ricardo Nunes Blanco","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"359684","tecnico":"Jairo Salvador Marquez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"359682","tecnico":"Javier Eduardo Perez Corredor","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"360625","tecnico":"Jose Daniel Gonzalez Villamil","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"323696","tecnico":"Edgar Oliveira Romero","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"341284","tecnico":"Jorge Pablo Pugliese","provincia":"TARRAGONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"361439","tecnico":"Jimmy Quiroz Cozar","provincia":"GIRONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"345362","tecnico":"Yoanderson Yoel Coronado Ceballos","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"300077","tecnico":"Dylan Daniel Henriquez Soto","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"339878","tecnico":"Ender Daniel Jaimes Delgado","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"302154","tecnico":"Nicola Antonio Morsa Piñate","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"347178","tecnico":"Ricardo Enmanuel Gouveia Goncalves","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"295567","tecnico":"Sayded Youssef Khalil Cabrita","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"Q14001","matricula":"Q19010","tecnico":"Jorge Alfredo Arias Shaigua","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"321171","tecnico":"Jose Manuel Perez Mena","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"362045","tecnico":"Juan Manuel Barrios Llinas","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"Q09886","tecnico":"Oliver Eduardo Maia Lara","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"339884","tecnico":"Rafiq Ignacio Nara","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"286800","matricula":"326793","tecnico":"Jose Lorenzo Rodriguez Mata","provincia":"LLEIDA"},{"nivel":"5 TEC","jde":"273371","matricula":"362595","tecnico":"Adrian Jose Jimenez Zarzalejo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"245715","tecnico":"Jefferson David Salas Sequea","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"239831","matricula":"362598","tecnico":"Jennyfer Maythe Oropeza de Garcia","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"362606","tecnico":"Juan Pablo Kolman Porras","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"362604","tecnico":"Jonayber Alexander Cardenas Torrealba","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363231","tecnico":"Nathan Contreras Ruiz","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363757","tecnico":"Cesar Jesus Romero Chavez","provincia":"GIRONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"LQ1546","tecnico":"Luigi Severino Rodriguez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363754","tecnico":"Ronald Vallejo Escobar","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"364181","tecnico":"Miguel Angel Arce Rojas","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"286800","matricula":"241180","tecnico":"Nelson Antonio Valls Arvelo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"365178","tecnico":"Esther Alvarez Martin","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"365180","tecnico":"Agustin Ezequiel Osses Marmol","provincia":"MALLORCA"},{"nivel":"5 TEC","jde":"274629","matricula":"367783","tecnico":"Henry David Martin Escalona","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"274954","tecnico":"Jesus Daniel Da Costa Fonseca","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367793","tecnico":"Jose Luis Martinez Tovar","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"367781","tecnico":"Luis Eduardo Castellanos Rodriguez","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367784","tecnico":"Raid Darsse Alouat","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"367782","tecnico":"Victor David Martin Escalona","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367794","tecnico":"Eloy Jesus Mata Briceño","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"286800","matricula":"","tecnico":"Alexis Arnaldo Figueroa Luis","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"Q14001","matricula":"334371","tecnico":"Lorenzo Aureliano Guzman Payano","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"286800","matricula":"368247","tecnico":"Eliomar Rafael Viloria Golindano","provincia":"LLEIDA"},{"nivel":"6 NI","jde":"Q14001","matricula":"368248","tecnico":"Francys Camacho Puentes","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"274629","matricula":"368261","tecnico":"Oswal Alberto Rodriguez Morin","provincia":"MÁLAGA"},{"nivel":"7 NI","jde":"Q14001","matricula":"","tecnico":"Jesus Moises Ramirez Ruiz","provincia":"GIRONA"},{"nivel":"7 NI","jde":"286800","matricula":"304746","tecnico":"Joel Wilfrido Macias Velasquez","provincia":"BARCELONA"},{"nivel":"8 NI","jde":"274629","matricula":"","tecnico":"Jhonney Jesus Duarte Yanez","provincia":"VALENCIA"},{"nivel":"8 NI","jde":"274629","matricula":"","tecnico":"Ivan Jose Martinez Gutierrez","provincia":"VALENCIA"}];
 
 let allRows = [];
 let headers = [];
@@ -339,6 +364,56 @@ function scoreSpan(value, kind) {
   return `<span class="score-${cls || "mid"}">${value}</span>`;
 }
 
+/* ---------- reglas de formato/color condicional ---------- */
+
+function stripEuro(v) {
+  return (v === null || v === undefined) ? "" : String(v).replace(/€/g, "").trim();
+}
+
+function fmt2(v) {
+  const n = parseNum(v);
+  return isNaN(n) ? (v || "") : n.toFixed(2);
+}
+
+function tdAlert(display, isRed) {
+  return `<td${isRed ? ' class="cell-alert"' : ""}>${display}</td>`;
+}
+
+// Celda de ML-V: 2 decimales, rojo si < 7
+function cellMlv(v) {
+  if (v === "" || v === undefined) return tdAlert("", false);
+  const n = parseNum(v);
+  return tdAlert(fmt2(v), !isNaN(n) && n < 7);
+}
+// Celda de Conv: rojo si < 15%
+function cellConv(v) {
+  if (v === "" || v === undefined) return tdAlert("", false);
+  const n = parseNum(v);
+  return tdAlert(v, !isNaN(n) && n < 15);
+}
+// Celda de %Cum: rojo si < 90%
+function cellCum(v) {
+  if (v === "" || v === undefined) return tdAlert("", false);
+  const n = parseNum(v);
+  return tdAlert(v, !isNaN(n) && n < 90);
+}
+// Celda de %RM: rojo si < 89.5%
+function cellPctRm(v) {
+  if (v === "" || v === undefined) return tdAlert("", false);
+  const n = parseNum(v);
+  return tdAlert(v, !isNaN(n) && n < 89.5);
+}
+// Celda de RM: solo número, sin símbolo de €, sin regla de color
+function cellRm(v) {
+  return tdAlert(stripEuro(v), false);
+}
+// Celda de NPS: rojo si no es superior a 9.4
+function cellNps(v) {
+  if (v === "" || v === undefined) return tdAlert("", false);
+  const n = parseNum(v);
+  return tdAlert(v, !isNaN(n) && n <= 9.4);
+}
+
 function monthIndexFromName(name) {
   const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   const n = normalize(name);
@@ -427,8 +502,12 @@ function renderEmployee(rawName) {
     return sortedRows.map(r => {
       const tds = compareCols.map(c => {
         const v = c.key ? (r[c.key] ?? "") : "";
-        if (c.label === "NPS") return `<td>${scoreSpan(v, "nps")}</td>`;
-        if (c.label === "%Cum") return `<td>${scoreSpan(v, "cum")}</td>`;
+        if (c.label === "ML-V") return cellMlv(v);
+        if (c.label === "Conv") return cellConv(v);
+        if (c.label === "%Cum") return cellCum(v);
+        if (c.label === "%RM") return cellPctRm(v);
+        if (c.label === "RM") return cellRm(v);
+        if (c.label === "NPS") return cellNps(v);
         return `<td>${v}</td>`;
       }).join("");
       return `<tr><td><strong>${g.sheet}</strong></td>${tds}</tr>`;
@@ -436,6 +515,30 @@ function renderEmployee(rawName) {
   }).join("");
 
   const compareTheadCols = compareCols.map(c => `<th>${c.label}</th>`).join("");
+
+  // Resumen: de los meses CON datos, cuántos incumplen cada umbral.
+  function isBad(v, threshold, orEqual) {
+    const n = parseNum(v);
+    if (isNaN(n)) return false;
+    return orEqual ? n <= threshold : n < threshold;
+  }
+  const monthsWithData = groupList.filter(g => g.rows.length > 0);
+  const totalEvaluated = monthsWithData.length;
+  function countBadMonths(headerKey, threshold, orEqual) {
+    if (!headerKey) return 0;
+    return monthsWithData.filter(g => g.rows.some(r => isBad(r[headerKey], threshold, orEqual))).length;
+  }
+  const alertDefs = [
+    { label: "ML-V", count: countBadMonths(mlvHeader, 7, false) },
+    { label: "Conv", count: countBadMonths(convHeader, 15, false) },
+    { label: "%Cum", count: countBadMonths(cumHeader, 90, false) },
+    { label: "%RM", count: countBadMonths(pctRmHeader, 89.5, false) },
+    { label: "NPS", count: countBadMonths(npsHeader, 9.4, true) }
+  ];
+  const alertItems = alertDefs.map(a => `<span class="${a.count > 0 ? "cell-alert" : ""}" style="padding:3px 8px;border-radius:6px;display:inline-block;margin:2px 4px 2px 0;">${a.count} de ${totalEvaluated} meses con <strong>${a.label}</strong> bajo</span>`).join("");
+  const alertSummary = totalEvaluated > 0
+    ? `<div class="section-label" style="margin-top:16px;">Resumen de alertas · ${totalEvaluated} meses evaluados</div><div>${alertItems}</div>`
+    : "";
 
   const monthSections = groupList.filter(g => g.rows.length > 0).map(g => {
     const sorted = g.rows.slice().sort((a, b) => {
@@ -447,8 +550,12 @@ function renderEmployee(rawName) {
     const tbody = sorted.map(r => {
       const tds = displayCols.map(h => {
         const v = r[h] ?? "";
-        if (h === npsHeader) return `<td>${scoreSpan(v, "nps")}</td>`;
-        if (h === cumHeader) return `<td>${scoreSpan(v, "cum")}</td>`;
+        if (h === mlvHeader) return cellMlv(v);
+        if (h === convHeader) return cellConv(v);
+        if (h === cumHeader) return cellCum(v);
+        if (h === pctRmHeader) return cellPctRm(v);
+        if (h === rmHeader) return cellRm(v);
+        if (h === npsHeader) return cellNps(v);
         return `<td>${v}</td>`;
       }).join("");
       return `<tr>${tds}</tr>`;
@@ -477,6 +584,7 @@ function renderEmployee(rawName) {
         </div>
         <div class="employee-code">${rows.length} registro${rows.length === 1 ? "" : "s"} en ${groupList.length} mes${groupList.length === 1 ? "" : "es"}</div>
       </div>
+      ${alertSummary}
       <div class="section-label" style="margin-top:16px;">Comparativa mensual · más reciente arriba</div>
       <div class="table-scroll">
         <table>
@@ -529,6 +637,58 @@ function doSearch() {
   }
 }
 
+/* ---------- buscador por jerarquía ---------- */
+
+function buildHierarchySelect() {
+  const sel = document.getElementById("hierarchySelect");
+  if (!sel) return;
+
+  const leaders = HIERARCHY_DATA.filter(d => d.nivel === "4 JDE");
+  leaders.sort((a, b) => a.tecnico.localeCompare(b.tecnico));
+
+  leaders.forEach(leader => {
+    const members = HIERARCHY_DATA.filter(d => d.jde === leader.matricula && d.matricula !== leader.matricula);
+    members.sort((a, b) => a.tecnico.localeCompare(b.tecnico));
+
+    const group = document.createElement("optgroup");
+    group.label = `${leader.tecnico} (${leader.matricula}) · ${members.length} técnico${members.length === 1 ? "" : "s"}`;
+
+    const leaderOpt = document.createElement("option");
+    leaderOpt.value = leader.matricula;
+    leaderOpt.textContent = `★ ${leader.tecnico} — responsable`;
+    group.appendChild(leaderOpt);
+
+    members.forEach(m => {
+      if (!m.matricula) return;
+      const opt = document.createElement("option");
+      opt.value = m.matricula;
+      opt.textContent = `${m.tecnico} (${m.matricula})`;
+      group.appendChild(opt);
+    });
+
+    sel.appendChild(group);
+  });
+}
+
+function searchByCode(code) {
+  if (!code) return;
+  const nq = normalize(code);
+  const allNames = Array.from(employeeMap.keys());
+  const matches = allNames.filter(n => normalize(n).includes(nq));
+  searchBox.value = code;
+  if (matches.length === 0) {
+    renderEmpty(`Este técnico (código ${code}) todavía no tiene registros de resultados cargados en el Sheet.`);
+  } else if (matches.length === 1) {
+    renderEmployee(matches[0]);
+  } else {
+    renderChips(matches, code);
+  }
+}
+
+document.getElementById("hierarchySelect").addEventListener("change", e => {
+  searchByCode(e.target.value);
+});
+
 searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
 document.getElementById("searchBtn").addEventListener("click", doSearch);
 document.getElementById("clearBtn").addEventListener("click", () => {
@@ -545,6 +705,7 @@ function setTodayDate() {
 
 window.addEventListener("DOMContentLoaded", () => {
   setTodayDate();
+  buildHierarchySelect();
   loadData();
 });
 </script>
