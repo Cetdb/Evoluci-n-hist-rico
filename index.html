@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Evolución Histórica por Empleado</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: #0b0b0c;
+    color: #f2ede1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 40px; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid #262117;
+    max-width: 1000px; margin: 0 auto;
+  }
+  .logo {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1.5px solid #c9a227;
+    display: flex; align-items: center; justify-content: center;
+    color: #d4af37; font-weight: 700; font-size: 13px;
+    flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 17px; margin: 0; color: #f5f1e8; font-weight: 700; }
+  .topbar .sub { font-size: 11px; color: #a9a08a; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+
+  .content { padding-top: 22px; }
+
+  .card {
+    background: #16130e;
+    border: 1px solid #2a2419;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #121a14; border: 1px solid #234027;
+    border-radius: 999px; padding: 8px 14px;
+    font-size: 12.5px; color: #b9c9bc; margin-bottom: 14px;
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; }
+
+  .top-grid { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 16px; align-items: stretch; }
+  @media (max-width: 640px) { .top-grid { grid-template-columns: 1fr; } }
+  .date-card { display: flex; flex-direction: column; justify-content: center; }
+  .date-card .date-label { font-size: 10.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .date-card .date-value { font-size: 16px; font-weight: 700; color: #f0d78a; text-transform: capitalize; }
+  .search-card { display: flex; flex-direction: column; justify-content: center; }
+
+  .search-row { display: flex; gap: 8px; }
+  input#searchBox {
+    flex: 1;
+    padding: 11px 14px;
+    font-size: 14px;
+    border: 1px solid #33301f;
+    border-radius: 9px;
+    outline: none;
+    background: #0f0d0a;
+    color: #f2ede1;
+  }
+  input#searchBox::placeholder { color: #6f6a5a; }
+  input#searchBox:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  button {
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 9px;
+    border: none;
+    background: linear-gradient(180deg, #e0bf4f, #c9a227);
+    color: #1a1608;
+    cursor: pointer;
+  }
+  button.secondary { background: #1e1a12; color: #cfc7b0; border: 1px solid #33301f; }
+  button:hover { filter: brightness(1.08); }
+
+  .meta-line { font-size: 11.5px; color: #8a8371; margin-top: 12px; letter-spacing: .02em; }
+
+  .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    background: #1c1811;
+    border: 1px solid #33301f;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #e7dfc9;
+  }
+  .chip:hover { border-color: #d4af37; color: #f2ede1; }
+
+  .state { text-align: center; color: #8a8371; font-size: 14px; padding: 26px 0; }
+  .state.error { color: #f87171; }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: #c9a227; margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::before { content: ""; width: 14px; height: 1.5px; background: #c9a227; display: inline-block; }
+
+  .employee-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .employee-name { font-size: 17px; font-weight: 700; color: #f5f1e8; }
+  .employee-code { font-size: 11.5px; color: #8a8371; letter-spacing: .03em; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-top: 16px; }
+  .stat { background: #100d09; border: 1px solid #26221749; border-radius: 12px; padding: 14px 16px; }
+  .stat .label { font-size: 10.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .07em; }
+  .stat .value { font-size: 22px; font-weight: 700; margin-top: 6px; color: #f5f1e8; }
+  .stat .value.good { color: #34d399; }
+  .stat .value.mid { color: #d4af37; }
+  .stat .value.bad { color: #f87171; }
+
+  .month-cards { display: flex; flex-direction: column; gap: 10px; }
+  .month-card {
+    background: #100d09; border: 1px solid #26221749; border-radius: 12px; padding: 14px 16px;
+  }
+  .month-card .month-card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .month-card .month-name { font-size: 15px; font-weight: 700; color: #f0d78a; }
+  .month-card .month-count { font-size: 11.5px; color: #8a8371; }
+  .month-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr)); gap: 10px; text-align: left; }
+  .month-metrics .m-value { font-size: 18px; font-weight: 700; }
+  .month-metrics .m-label { font-size: 10px; color: #8a8371; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid #221e15; white-space: nowrap; color: #d9d2bf; }
+  th { background: #100d09; color: #8a8371; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
+  tr:hover td { background: #17140f; }
+  .table-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid #26221749; }
+  table { margin-top: 0; }
+
+  .score-good { color: #34d399; font-weight: 700; }
+  .score-mid { color: #d4af37; font-weight: 700; }
+  .score-bad { color: #f87171; font-weight: 700; }
+
+  .hint { font-size: 12px; color: #6f6a5a; margin-top: 8px; }
+
+  .month-title { font-size: 14px; font-weight: 700; color: #f0d78a; }
+  .month-sub { font-size: 11.5px; color: #8a8371; margin-bottom: 10px; }
+  .month-section { border-left: 2px solid #c9a227; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">✦</div>
+    <div>
+      <h1>Evolución Histórica por Empleado</h1>
+      <div class="sub">Resumen App · Datos en vivo desde Google Sheets</div>
+    </div>
+  </div>
+
+  <div class="wrap content">
+    <div class="top-grid">
+      <div class="card date-card">
+        <div class="date-label">Fecha actual</div>
+        <div class="date-value" id="todayDate">—</div>
+      </div>
+      <div class="card search-card">
+        <div class="search-row">
+          <input id="searchBox" type="text" placeholder="Escribe un código de empleado o parte del nombre (ej. 313824, E-MD, Alexis)" autocomplete="off" />
+          <button id="searchBtn">Buscar</button>
+          <button id="clearBtn" class="secondary">Limpiar</button>
+        </div>
+        <div class="meta-line" id="metaLine"></div>
+      </div>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+<script>
+const FILE_ID = "1UWfgzyAlu6sK6VLKP0Qoqhs31UfRju1J-zqaR8yuUng";
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+let allRows = [];
+let headers = [];
+let employeeMap = new Map();
+let employeeKey = "Técnico";
+let sheetNames = [];
+
+const metaLine = document.getElementById('metaLine');
+const resultsEl = document.getElementById('results');
+const searchBox = document.getElementById('searchBox');
+
+/* ---------- helpers ---------- */
+
+function normalize(s) {
+  return (s || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+function findHeader(pred) {
+  return headers.find(pred);
+}
+
+function parseNum(s) {
+  if (s === null || s === undefined || s === "") return NaN;
+  const cleaned = String(s).replace(/[€%\s]/g, "").replace(",", ".");
+  return parseFloat(cleaned);
+}
+
+function parseFecha(s) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec((s || "").trim());
+  if (!m) return null;
+  return new Date(+m[3], +m[2] - 1, +m[1]);
+}
+
+function cleanTecnico(v) {
+  return (v || "").replace(/^\[merged\]\s*/i, "").trim();
+}
+
+/* ---------- fetch each month tab from Google's public Visualization API ---------- */
+
+function parseGviz(text) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("Respuesta inesperada de Google Sheets.");
+  const json = JSON.parse(text.slice(start, end + 1));
+  if (json.status === "error") {
+    const msg = (json.errors && json.errors[0] && (json.errors[0].detailed_message || json.errors[0].message)) || "Error de Google Sheets.";
+    throw new Error(msg);
+  }
+  const cols = json.table.cols.map(c => (c.label || "").trim());
+  const rows = json.table.rows.map(r => cols.map((_, i) => {
+    const cell = r.c ? r.c[i] : null;
+    if (!cell) return "";
+    if (cell.f !== undefined && cell.f !== null) return cell.f;
+    if (cell.v === undefined || cell.v === null) return "";
+    return String(cell.v);
+  }));
+  return { cols, rows };
+}
+
+async function fetchSheet(name) {
+  const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1`;
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    return null;
+  }
+  if (!res.ok) return null;
+  const text = await res.text();
+  let parsed;
+  try {
+    parsed = parseGviz(text);
+  } catch (e) {
+    return null;
+  }
+  const { cols, rows } = parsed;
+  if (!cols.some(c => normalize(c) === "fecha")) return null;
+  if (!cols.some(c => normalize(c) === "tecnico")) return null;
+
+  const finalHeaders = [];
+  cols.forEach(c => {
+    let h = c || "Col";
+    if (finalHeaders.includes(h)) h = h + " (2)";
+    finalHeaders.push(h);
+  });
+
+  const parsedRows = rows
+    .filter(r => r.some(v => v !== ""))
+    .map(r => {
+      const obj = {};
+      finalHeaders.forEach((h, i) => { obj[h] = r[i] !== undefined ? r[i] : ""; });
+      obj.__sheet = name;
+      return obj;
+    });
+
+  return { name, headers: finalHeaders, rows: parsedRows };
+}
+
+async function loadData() {
+  try {
+    const results = await Promise.all(MONTHS.map(m => fetchSheet(m)));
+    const sheets = results.filter(Boolean);
+    if (sheets.length === 0) {
+      throw new Error('No se pudo leer ninguna hoja. Verifica que el Google Sheet esté compartido como "Cualquiera con el enlace puede ver".');
+    }
+    processContent(sheets);
+  } catch (err) {
+    metaLine.textContent = "No se pudieron cargar los datos.";
+    showState(`No se pudo leer el Sheet: ${err.message || err}. Verifica el acceso del Sheet y recarga la página.`, true);
+  }
+}
+
+/* ---------- data aggregation ---------- */
+
+function processContent(sheets) {
+  allRows = [];
+  const headerSet = [];
+  sheets.forEach(s => {
+    s.headers.forEach(h => { if (!headerSet.includes(h)) headerSet.push(h); });
+    allRows = allRows.concat(s.rows);
+  });
+  headers = headerSet;
+  sheetNames = sheets.map(s => s.name);
+
+  const tecnicoHeader = findHeader(h => normalize(h) === "tecnico") || "Técnico";
+  employeeKey = tecnicoHeader;
+
+  employeeMap = new Map();
+  allRows.forEach(r => {
+    const raw = cleanTecnico(r[employeeKey]);
+    if (!raw) return;
+    if (!employeeMap.has(raw)) employeeMap.set(raw, []);
+    employeeMap.get(raw).push(r);
+  });
+
+  metaLine.textContent = "";
+
+  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
+}
+
+/* ---------- rendering ---------- */
+
+function showState(html, isError) {
+  resultsEl.innerHTML = `<div class="card"><div class="state${isError ? " error" : ""}">${html}</div></div>`;
+}
+
+function renderEmpty(msg) { showState(msg, false); }
+
+function scoreClass(n, kind) {
+  if (isNaN(n)) return "";
+  if (kind === "nps") return n >= 9 ? "good" : n >= 7 ? "mid" : "bad";
+  if (kind === "cum") return n >= 95 ? "good" : n >= 85 ? "mid" : "bad";
+  return "";
+}
+
+function scoreSpan(value, kind) {
+  const n = parseNum(value);
+  if (isNaN(n)) return `<span>${value || ""}</span>`;
+  const cls = scoreClass(n, kind);
+  return `<span class="score-${cls || "mid"}">${value}</span>`;
+}
+
+function monthIndexFromName(name) {
+  const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const n = normalize(name);
+  return months.findIndex(m => n.includes(m));
+}
+
+function renderEmployee(rawName) {
+  const rows = (employeeMap.get(rawName) || []).slice();
+  const fechaHeader = findHeader(h => normalize(h) === "fecha") || "Fecha";
+  const npsHeader = findHeader(h => normalize(h) === "nps");
+  const cumHeader = findHeader(h => normalize(h).includes("cum") && !normalize(h).includes("incum"));
+  const ventasHeader = findHeader(h => normalize(h) === "ventas");
+  const incumHeader = findHeader(h => normalize(h) === "incum");
+
+  const codeMatch = rawName.match(/^([A-Za-z0-9\- ]*\d{4,})-(.+)$/);
+  const code = codeMatch ? codeMatch[1].trim() : "";
+  const name = codeMatch ? codeMatch[2].trim() : rawName;
+
+  const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+  const numsOf = (arr, header) => arr.map(r => parseNum(r[header])).filter(v => !isNaN(v));
+
+  const groups = new Map();
+  rows.forEach(r => {
+    const key = r.__sheet || "General";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+
+  // Se listan TODOS los meses cargados en el Sheet, tenga o no datos este empleado ese mes.
+  const groupList = sheetNames.map(sheet => {
+    const grpRows = groups.get(sheet) || [];
+    const dates = grpRows.map(r => parseFecha(r[fechaHeader])).filter(Boolean);
+    const minDate = dates.length ? new Date(Math.min(...dates.map(d => d.getTime()))) : null;
+    return { sheet, rows: grpRows, minDate, monthIdx: monthIndexFromName(sheet) };
+  });
+
+  // Más reciente arriba, más antiguo hacia abajo
+  groupList.sort((a, b) => {
+    if (a.minDate && b.minDate) return b.minDate - a.minDate;
+    if (a.minDate) return -1;
+    if (b.minDate) return 1;
+    if (a.monthIdx !== -1 && b.monthIdx !== -1) return b.monthIdx - a.monthIdx;
+    return b.sheet.localeCompare(a.sheet);
+  });
+
+  const allNps = numsOf(rows, npsHeader);
+  const allCum = numsOf(rows, cumHeader);
+  const allVentas = numsOf(rows, ventasHeader);
+  const avgNps = avg(allNps);
+  const avgCum = avg(allCum);
+  const sumVentas = allVentas.length ? allVentas.reduce((a, b) => a + b, 0) : null;
+
+  const displayCols = headers.filter(h => h !== employeeKey);
+
+  const labHeader = findHeader(h => normalize(h) === "lab");
+  const mlvHeader = findHeader(h => normalize(h) === "ml-v");
+  const apbHeader = findHeader(h => normalize(h) === "a+b");
+  const convHeader = findHeader(h => normalize(h) === "conv");
+  const rmHeader = findHeader(h => normalize(h) === "rm");
+  const pctRmHeader = findHeader(h => normalize(h) === "%rm");
+
+  const compareCols = [
+    { key: labHeader, label: "Lab" },
+    { key: mlvHeader, label: "ML-V" },
+    { key: apbHeader, label: "A+B" },
+    { key: ventasHeader, label: "Ventas" },
+    { key: convHeader, label: "Conv" },
+    { key: cumHeader, label: "%Cum" },
+    { key: incumHeader, label: "Incum" },
+    { key: rmHeader, label: "RM" },
+    { key: pctRmHeader, label: "%RM" },
+    { key: npsHeader, label: "NPS" }
+  ];
+
+  const compareRowsHtml = groupList.map(g => {
+    if (g.rows.length === 0) {
+      const emptyTds = compareCols.map(() => `<td>—</td>`).join("");
+      return `<tr style="opacity:.45;"><td><strong>${g.sheet}</strong></td>${emptyTds}</tr>`;
+    }
+    const sortedRows = g.rows.slice().sort((a, b) => {
+      const da = parseFecha(a[fechaHeader]);
+      const db = parseFecha(b[fechaHeader]);
+      if (!da || !db) return 0;
+      return db - da;
+    });
+    return sortedRows.map(r => {
+      const tds = compareCols.map(c => {
+        const v = c.key ? (r[c.key] ?? "") : "";
+        if (c.label === "NPS") return `<td>${scoreSpan(v, "nps")}</td>`;
+        if (c.label === "%Cum") return `<td>${scoreSpan(v, "cum")}</td>`;
+        return `<td>${v}</td>`;
+      }).join("");
+      return `<tr><td><strong>${g.sheet}</strong></td>${tds}</tr>`;
+    }).join("");
+  }).join("");
+
+  const compareTheadCols = compareCols.map(c => `<th>${c.label}</th>`).join("");
+
+  const monthSections = groupList.filter(g => g.rows.length > 0).map(g => {
+    const sorted = g.rows.slice().sort((a, b) => {
+      const da = parseFecha(a[fechaHeader]);
+      const db = parseFecha(b[fechaHeader]);
+      if (!da || !db) return 0;
+      return db - da;
+    });
+    const tbody = sorted.map(r => {
+      const tds = displayCols.map(h => {
+        const v = r[h] ?? "";
+        if (h === npsHeader) return `<td>${scoreSpan(v, "nps")}</td>`;
+        if (h === cumHeader) return `<td>${scoreSpan(v, "cum")}</td>`;
+        return `<td>${v}</td>`;
+      }).join("");
+      return `<tr>${tds}</tr>`;
+    }).join("");
+    const thead = displayCols.map(h => `<th>${h}</th>`).join("");
+    return `
+      <div class="card month-section">
+        <div class="month-title">${g.sheet}</div>
+        <div class="month-sub">${g.rows.length} registro${g.rows.length === 1 ? "" : "s"}</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>${thead}</tr></thead>
+            <tbody>${tbody}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  resultsEl.innerHTML = `
+    <div class="card">
+      <div class="employee-header">
+        <div>
+          <div class="employee-name">${name}</div>
+          <div class="employee-code">${code || rawName}</div>
+        </div>
+        <div class="employee-code">${rows.length} registro${rows.length === 1 ? "" : "s"} en ${groupList.length} mes${groupList.length === 1 ? "" : "es"}</div>
+      </div>
+      <div class="section-label" style="margin-top:16px;">Comparativa mensual · más reciente arriba</div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Mes</th>${compareTheadCols}</tr></thead>
+          <tbody>${compareRowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+
+    ${monthSections}
+  `;
+}
+
+function renderChips(matches, query) {
+  const shown = matches.slice(0, 30);
+  const chips = shown.map(m => `<div class="chip" data-name="${m.replace(/"/g, "&quot;")}">${m}</div>`).join("");
+  const extra = matches.length > 30 ? `<div class="hint">Y ${matches.length - 30} más — sé más específico para acotar la búsqueda.</div>` : "";
+  resultsEl.innerHTML = `
+    <div class="card">
+      <div class="state">Encontré ${matches.length} empleados que coinciden con "${query}". Elige uno:</div>
+      <div class="chip-list">${chips}</div>
+      ${extra}
+    </div>
+  `;
+  resultsEl.querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => {
+      searchBox.value = c.getAttribute("data-name");
+      renderEmployee(c.getAttribute("data-name"));
+    });
+  });
+}
+
+function doSearch() {
+  const query = searchBox.value.trim();
+  if (!query) { renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial."); return; }
+  if (employeeMap.size === 0) { renderEmpty("Todavía no hay datos cargados desde el Sheet."); return; }
+
+  const nq = normalize(query);
+  const allNames = Array.from(employeeMap.keys());
+  const exact = allNames.find(n => normalize(n) === nq);
+  if (exact) { renderEmployee(exact); return; }
+
+  const matches = allNames.filter(n => normalize(n).includes(nq));
+  if (matches.length === 0) {
+    renderEmpty(`No encontré ningún empleado que coincida con "${query}".`);
+  } else if (matches.length === 1) {
+    renderEmployee(matches[0]);
+  } else {
+    renderChips(matches, query);
+  }
+}
+
+searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+document.getElementById("searchBtn").addEventListener("click", doSearch);
+document.getElementById("clearBtn").addEventListener("click", () => {
+  searchBox.value = "";
+  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
+});
+
+function setTodayDate() {
+  const el = document.getElementById("todayDate");
+  if (!el) return;
+  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  el.textContent = txt;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTodayDate();
+  loadData();
+});
+</script>
+</body>
+</html>
