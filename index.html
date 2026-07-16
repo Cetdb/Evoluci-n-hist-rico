@@ -320,7 +320,25 @@ async function fetchSheet(name) {
     }
   }
   if (!parsed) return null;
-  const { cols, rows } = parsed;
+  let { cols, rows } = parsed;
+
+  // Algunas pestañas tienen la celda de encabezado de la columna de fecha en
+  // blanco (en vez de decir literalmente "Fecha"), aunque la columna sí
+  // contiene fechas. Si no lo encontramos por texto, lo detectamos buscando
+  // qué columna tiene valores con formato DD/MM/AAAA.
+  if (!cols.some(c => normalize(c) === "fecha")) {
+    const dateRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+    let dateColIdx = -1;
+    for (let ci = 0; ci < cols.length; ci++) {
+      const hits = rows.slice(0, 15).filter(r => dateRegex.test((r[ci] || "").trim())).length;
+      if (hits > 0) { dateColIdx = ci; break; }
+    }
+    if (dateColIdx !== -1) {
+      cols = cols.slice();
+      cols[dateColIdx] = "Fecha";
+    }
+  }
+
   if (!cols.some(c => normalize(c) === "fecha")) return null;
   if (!cols.some(c => normalize(c) === "tecnico")) return null;
 
@@ -953,23 +971,4 @@ document.getElementById("clearBtn").addEventListener("click", () => {
 function setTodayDate() {
   const el = document.getElementById("todayDate");
   if (!el) return;
-  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  el.textContent = txt;
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  setTodayDate();
-  buildHierarchySelect();
-  buildProvinceSelect();
-  // Algunos navegadores restauran la última opción elegida en un <select> al
-  // recargar la página, pero sin disparar el evento "change". Forzamos que
-  // ambos buscadores arranquen vacíos para que coincidan con el estado real.
-  document.getElementById("hierarchySelect").value = "";
-  document.getElementById("provinceSelect").value = "";
-  selectedLeaderCode = "";
-  selectedProvincia = "";
-  loadData();
-});
-</script>
-</body>
-</html>
+  const
