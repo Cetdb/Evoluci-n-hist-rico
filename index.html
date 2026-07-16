@@ -315,15 +315,7 @@ async function fetchSheetOnce(name) {
   return parseGviz(text);
 }
 
-async function fetchSheetAttempt(name) {
-  let parsed;
-  try {
-    parsed = await fetchSheetOnce(name);
-  } catch (e) {
-    return null;
-  }
-  let { cols, rows } = parsed;
-
+function buildSheetResult(name, cols, rows) {
   // Algunas pestañas tienen la celda de encabezado de la columna de fecha en
   // blanco (en vez de decir literalmente "Fecha"), aunque la columna sí
   // contiene fechas. Si no lo encontramos por texto, lo detectamos buscando
@@ -368,6 +360,54 @@ async function fetchSheetAttempt(name) {
   return { name, headers: finalHeaders, rows: parsedRows, fingerprint, rawCount: rows.length };
 }
 
+async function fetchSheetAttempt(name) {
+  let parsed;
+  try {
+    parsed = await fetchSheetOnce(name);
+  } catch (e) {
+    return null;
+  }
+  return buildSheetResult(name, parsed.cols, parsed.rows);
+}
+
+async function fetchSheetOnceDefault() {
+  // Pide la hoja "por defecto" del libro (sin indicar nombre), que Google
+  // resuelve internamente a la primera pestaña.
+  const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&headers=1&_ts=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const text = await res.text();
+  return parseGviz(text);
+}
+
+// Detectado en producción: para una pestaña que se está editando en este
+// momento (ej. "Julio"), Google a veces se queda "atascado" devolviendo muy
+// pocas filas cuando se pide por NOMBRE exacto, aunque la pestaña real tenga
+// muchísimas más filas — mientras que pedir la hoja "por defecto" (sin
+// nombre) sí trae los datos completos y frescos. Como último recurso,
+// probamos esa vía y solo la aceptamos si las fechas que trae realmente
+// corresponden al mes que estamos buscando (para no mezclar el mes
+// equivocado).
+async function fetchSheetAttemptDefaultForMonth(name) {
+  let parsed;
+  try {
+    parsed = await fetchSheetOnceDefault();
+  } catch (e) {
+    return null;
+  }
+  const result = buildSheetResult(name, parsed.cols, parsed.rows);
+  if (!result) return null;
+  const expectedMonthIdx = monthIndexFromName(name);
+  if (expectedMonthIdx === -1) return { ...result, viaDefaultFallback: true };
+  const fechaHeader = result.headers.find(h => normalize(h) === "fecha") || "Fecha";
+  const sample = result.rows.slice(0, 20);
+  const withDate = sample.map(r => parseFecha(r[fechaHeader])).filter(Boolean);
+  if (withDate.length === 0) return { ...result, viaDefaultFallback: true };
+  const matching = withDate.filter(d => d.getMonth() === expectedMonthIdx).length;
+  if (matching / withDate.length < 0.5) return null; // las fechas no son de este mes: descartar
+  return { ...result, viaDefaultFallback: true };
+}
+
 async function fetchSheet(name) {
   // Cuando una pestaña se está editando activamente, Google a veces devuelve
   // una foto vieja/incompleta (por ejemplo 1 fila en vez de más de 100
@@ -384,6 +424,13 @@ async function fetchSheet(name) {
       if (result && (!best || result.rawCount > best.rawCount)) {
         best = result;
       }
+    }
+  }
+  // Último recurso: la vía "por defecto", validada contra el mes esperado.
+  if (!best || best.rawCount < minRowsBeforeRetry) {
+    const fallback = await fetchSheetAttemptDefaultForMonth(name);
+    if (fallback && (!best || fallback.rawCount > best.rawCount)) {
+      best = fallback;
     }
   }
   return best;
@@ -406,7 +453,9 @@ async function loadData() {
     for (const m of MONTHS) {
       const s = await fetchSheet(m);
       if (!s) continue;
-      if (fallbackFingerprint && s.fingerprint === fallbackFingerprint) {
+      // Si llegó por la vía "por defecto" ya validamos que sus fechas son de
+      // este mes, así que no lo comparamos contra la huella de relleno.
+      if (!s.viaDefaultFallback && fallbackFingerprint && s.fingerprint === fallbackFingerprint) {
         continue; // esta pestaña todavía no existe de verdad
       }
       sheets.push(s);
@@ -965,71 +1014,4 @@ function updateGroupStats() {
     if (!monthRows.some(r => isBad(r[convHeader], 15, false))) passConv++;
     if (!monthRows.some(r => isBad(r[cumHeader], 90, false))) passCum++;
     if (!monthRows.some(r => isBad(r[pctRmHeader], 89.5, false))) passRm++;
-    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps++;
-  });
-
-  const statDefs = [
-    { label: "ML-V", value: passMlv },
-    { label: "Conv", value: passConv },
-    { label: "%Cum", value: passCum },
-    { label: "%RM", value: passRm },
-    { label: "NPS", value: passNps }
-  ];
-
-  const grid = statDefs.map(s => `
-    <div class="alert-chip${s.value < total ? " bad" : ""}">
-      <div class="av">${s.value}/${total}</div>
-      <div class="al">${s.label}</div>
-    </div>
-  `).join("");
-
-  const monthsLabel = months.length === 1 ? months[0] : `${months.length} meses seleccionados`;
-  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${monthsLabel} (${withData}/${total} con datos en el período)`;
-  document.getElementById("groupStatsGrid").innerHTML = grid;
-}
-
-document.getElementById("hierarchySelect").addEventListener("change", e => {
-  const val = e.target.value;
-  selectedLeaderCode = val.startsWith("TEAM:") ? val.slice(5) : "";
-  renderCombined();
-});
-
-document.getElementById("provinceSelect").addEventListener("change", e => {
-  selectedProvincia = e.target.value || "";
-  renderCombined();
-});
-
-searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
-document.getElementById("searchBtn").addEventListener("click", doSearch);
-document.getElementById("clearBtn").addEventListener("click", () => {
-  searchBox.value = "";
-  document.getElementById("hierarchySelect").value = "";
-  document.getElementById("provinceSelect").value = "";
-  selectedLeaderCode = "";
-  selectedProvincia = "";
-  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
-});
-
-function setTodayDate() {
-  const el = document.getElementById("todayDate");
-  if (!el) return;
-  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  el.textContent = txt;
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  setTodayDate();
-  buildHierarchySelect();
-  buildProvinceSelect();
-  // Algunos navegadores restauran la última opción elegida en un <select> al
-  // recargar la página, pero sin disparar el evento "change". Forzamos que
-  // ambos buscadores arranquen vacíos para que coincidan con el estado real.
-  document.getElementById("hierarchySelect").value = "";
-  document.getElementById("provinceSelect").value = "";
-  selectedLeaderCode = "";
-  selectedProvincia = "";
-  loadData();
-});
-</script>
-</body>
-</html>
+    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps
