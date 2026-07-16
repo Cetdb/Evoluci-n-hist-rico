@@ -412,14 +412,15 @@ async function fetchSheet(name) {
   // Cuando una pestaña se está editando activamente, Google a veces devuelve
   // una foto vieja/incompleta (por ejemplo 1 fila en vez de más de 100
   // reales) aunque le pidamos datos frescos. Si el primer intento trae muy
-  // pocas filas, reintentamos varias veces y nos quedamos con la versión que
-  // trajo MÁS filas — casi siempre es la correcta.
+  // pocas filas, reintentamos (pocas veces, para no saturar a Google con
+  // demasiadas peticiones) y nos quedamos con la versión que trajo MÁS
+  // filas — casi siempre es la correcta.
   let best = await fetchSheetAttempt(name);
-  const minRowsBeforeRetry = 10;
-  const extraAttempts = 4;
+  const minRowsBeforeRetry = 5;
+  const extraAttempts = 1;
   if (!best || best.rawCount < minRowsBeforeRetry) {
     for (let i = 0; i < extraAttempts; i++) {
-      await sleep(350 + i * 250);
+      await sleep(600);
       const result = await fetchSheetAttempt(name);
       if (result && (!best || result.rawCount > best.rawCount)) {
         best = result;
@@ -428,6 +429,7 @@ async function fetchSheet(name) {
   }
   // Último recurso: la vía "por defecto", validada contra el mes esperado.
   if (!best || best.rawCount < minRowsBeforeRetry) {
+    await sleep(400);
     const fallback = await fetchSheetAttemptDefaultForMonth(name);
     if (fallback && (!best || fallback.rawCount > best.rawCount)) {
       best = fallback;
@@ -452,6 +454,7 @@ async function loadData() {
     const sheets = [];
     for (const m of MONTHS) {
       const s = await fetchSheet(m);
+      await sleep(150); // pequeña pausa entre meses para no saturar a Google
       if (!s) continue;
       // Si llegó por la vía "por defecto" ya validamos que sus fechas son de
       // este mes, así que no lo comparamos contra la huella de relleno.
@@ -1014,4 +1017,71 @@ function updateGroupStats() {
     if (!monthRows.some(r => isBad(r[convHeader], 15, false))) passConv++;
     if (!monthRows.some(r => isBad(r[cumHeader], 90, false))) passCum++;
     if (!monthRows.some(r => isBad(r[pctRmHeader], 89.5, false))) passRm++;
-    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps
+    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps++;
+  });
+
+  const statDefs = [
+    { label: "ML-V", value: passMlv },
+    { label: "Conv", value: passConv },
+    { label: "%Cum", value: passCum },
+    { label: "%RM", value: passRm },
+    { label: "NPS", value: passNps }
+  ];
+
+  const grid = statDefs.map(s => `
+    <div class="alert-chip${s.value < total ? " bad" : ""}">
+      <div class="av">${s.value}/${total}</div>
+      <div class="al">${s.label}</div>
+    </div>
+  `).join("");
+
+  const monthsLabel = months.length === 1 ? months[0] : `${months.length} meses seleccionados`;
+  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${monthsLabel} (${withData}/${total} con datos en el período)`;
+  document.getElementById("groupStatsGrid").innerHTML = grid;
+}
+
+document.getElementById("hierarchySelect").addEventListener("change", e => {
+  const val = e.target.value;
+  selectedLeaderCode = val.startsWith("TEAM:") ? val.slice(5) : "";
+  renderCombined();
+});
+
+document.getElementById("provinceSelect").addEventListener("change", e => {
+  selectedProvincia = e.target.value || "";
+  renderCombined();
+});
+
+searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+document.getElementById("searchBtn").addEventListener("click", doSearch);
+document.getElementById("clearBtn").addEventListener("click", () => {
+  searchBox.value = "";
+  document.getElementById("hierarchySelect").value = "";
+  document.getElementById("provinceSelect").value = "";
+  selectedLeaderCode = "";
+  selectedProvincia = "";
+  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
+});
+
+function setTodayDate() {
+  const el = document.getElementById("todayDate");
+  if (!el) return;
+  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  el.textContent = txt;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTodayDate();
+  buildHierarchySelect();
+  buildProvinceSelect();
+  // Algunos navegadores restauran la última opción elegida en un <select> al
+  // recargar la página, pero sin disparar el evento "change". Forzamos que
+  // ambos buscadores arranquen vacíos para que coincidan con el estado real.
+  document.getElementById("hierarchySelect").value = "";
+  document.getElementById("provinceSelect").value = "";
+  selectedLeaderCode = "";
+  selectedProvincia = "";
+  loadData();
+});
+</script>
+</body>
+</html>
