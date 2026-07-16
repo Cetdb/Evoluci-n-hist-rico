@@ -84,7 +84,7 @@
 
   .meta-line { font-size: 11.5px; color: #8a8371; margin-top: 12px; letter-spacing: .02em; }
 
-  select#hierarchySelect {
+  select#hierarchySelect, select#provinceSelect {
     width: 100%;
     padding: 11px 14px;
     font-size: 14px;
@@ -94,7 +94,21 @@
     background: #0f0d0a;
     color: #f2ede1;
   }
-  select#hierarchySelect:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  select#hierarchySelect:focus, select#provinceSelect:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+
+  .month-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .month-pill {
+    background: #1c1811;
+    border: 1px solid #33301f;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: #cfc7b0;
+    user-select: none;
+  }
+  .month-pill:hover { border-color: #d4af37; color: #f2ede1; }
+  .month-pill.active { background: #2a2413; border-color: #d4af37; color: #f0d78a; font-weight: 600; }
 
   .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .chip {
@@ -153,6 +167,16 @@
 
   .cell-alert { background: rgba(248,113,113,.22); color: #fecaca; font-weight: 700; }
 
+  .alert-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .alert-chip {
+    background: #100d09; border: 1px solid #26221749; border-radius: 8px;
+    padding: 6px 12px; min-width: 60px; text-align: center;
+  }
+  .alert-chip .av { font-size: 14px; font-weight: 700; color: #f5f1e8; }
+  .alert-chip .al { font-size: 9.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .05em; margin-top: 1px; }
+  .alert-chip.bad { border-color: rgba(248,113,113,.35); }
+  .alert-chip.bad .av { color: #f87171; }
+
   .hint { font-size: 12px; color: #6f6a5a; margin-top: 8px; }
 
   .month-title { font-size: 14px; font-weight: 700; color: #f0d78a; }
@@ -186,9 +210,16 @@
     </div>
 
     <div class="card">
-      <div class="section-label">Buscar por jerarquía</div>
-      <select id="hierarchySelect">
-        <option value="">— Elige un responsable y técnico —</option>
+      <div class="section-label">Buscar por responsable (jefe técnico)</div>
+      <select id="hierarchySelect" autocomplete="off">
+        <option value="">— Elige un responsable —</option>
+      </select>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Buscar por provincia</div>
+      <select id="provinceSelect" autocomplete="off">
+        <option value="">— Elige una provincia —</option>
       </select>
     </div>
 
@@ -235,6 +266,12 @@ function parseFecha(s) {
   return new Date(+m[3], +m[2] - 1, +m[1]);
 }
 
+function isBad(v, threshold, orEqual) {
+  const n = parseNum(v);
+  if (isNaN(n)) return false;
+  return orEqual ? n <= threshold : n < threshold;
+}
+
 function cleanTecnico(v) {
   return (v || "").replace(/^\[merged\]\s*/i, "").trim();
 }
@@ -261,22 +298,28 @@ function parseGviz(text) {
   return { cols, rows };
 }
 
-async function fetchSheet(name) {
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function fetchSheetOnce(name) {
   const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1`;
-  let res;
-  try {
-    res = await fetch(url);
-  } catch (e) {
-    return null;
-  }
-  if (!res.ok) return null;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("HTTP " + res.status);
   const text = await res.text();
-  let parsed;
-  try {
-    parsed = parseGviz(text);
-  } catch (e) {
-    return null;
+  return parseGviz(text);
+}
+
+async function fetchSheet(name) {
+  const attempts = 4;
+  let parsed = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      parsed = await fetchSheetOnce(name);
+      break;
+    } catch (e) {
+      if (i < attempts - 1) await sleep(400 + i * 300);
+    }
   }
+  if (!parsed) return null;
   const { cols, rows } = parsed;
   if (!cols.some(c => normalize(c) === "fecha")) return null;
   if (!cols.some(c => normalize(c) === "tecnico")) return null;
@@ -302,7 +345,11 @@ async function fetchSheet(name) {
 
 async function loadData() {
   try {
-    const results = await Promise.all(MONTHS.map(m => fetchSheet(m)));
+    // Escalonamos ligeramente las peticiones para no saturar a Google con 12 a la vez.
+    const results = await Promise.all(MONTHS.map(async (m, i) => {
+      if (i > 0) await sleep(i * 120);
+      return fetchSheet(m);
+    }));
     const sheets = results.filter(Boolean);
     if (sheets.length === 0) {
       throw new Error('No se pudo leer ninguna hoja. Verifica que el Google Sheet esté compartido como "Cualquiera con el enlace puede ver".');
@@ -535,9 +582,14 @@ function renderEmployee(rawName) {
     { label: "%RM", count: countBadMonths(pctRmHeader, 89.5, false) },
     { label: "NPS", count: countBadMonths(npsHeader, 9.4, true) }
   ];
-  const alertItems = alertDefs.map(a => `<span class="${a.count > 0 ? "cell-alert" : ""}" style="padding:3px 8px;border-radius:6px;display:inline-block;margin:2px 4px 2px 0;">${a.count} de ${totalEvaluated} meses con <strong>${a.label}</strong> bajo</span>`).join("");
+  const alertItems = alertDefs.map(a => `
+    <div class="alert-chip${a.count > 0 ? " bad" : ""}">
+      <div class="av">${a.count}/${totalEvaluated}</div>
+      <div class="al">${a.label}</div>
+    </div>
+  `).join("");
   const alertSummary = totalEvaluated > 0
-    ? `<div class="section-label" style="margin-top:16px;">Resumen de alertas · ${totalEvaluated} meses evaluados</div><div>${alertItems}</div>`
+    ? `<div class="section-label" style="margin-top:16px;">Resumen de alertas</div><div class="alert-grid">${alertItems}</div>`
     : "";
 
   const monthSections = groupList.filter(g => g.rows.length > 0).map(g => {
@@ -643,30 +695,17 @@ function buildHierarchySelect() {
   const sel = document.getElementById("hierarchySelect");
   if (!sel) return;
 
+  // Solo los responsables (jefes técnicos) aparecen aquí. Para buscar un técnico
+  // concreto se usa el buscador principal de arriba.
   const leaders = HIERARCHY_DATA.filter(d => d.nivel === "4 JDE");
   leaders.sort((a, b) => a.tecnico.localeCompare(b.tecnico));
 
   leaders.forEach(leader => {
-    const members = HIERARCHY_DATA.filter(d => d.jde === leader.matricula && d.matricula !== leader.matricula);
-    members.sort((a, b) => a.tecnico.localeCompare(b.tecnico));
-
-    const group = document.createElement("optgroup");
-    group.label = `${leader.tecnico} (${leader.matricula}) · ${members.length} técnico${members.length === 1 ? "" : "s"}`;
-
-    const leaderOpt = document.createElement("option");
-    leaderOpt.value = leader.matricula;
-    leaderOpt.textContent = `★ ${leader.tecnico} — responsable`;
-    group.appendChild(leaderOpt);
-
-    members.forEach(m => {
-      if (!m.matricula) return;
-      const opt = document.createElement("option");
-      opt.value = m.matricula;
-      opt.textContent = `${m.tecnico} (${m.matricula})`;
-      group.appendChild(opt);
-    });
-
-    sel.appendChild(group);
+    const memberCount = HIERARCHY_DATA.filter(d => d.jde === leader.matricula && d.matricula !== leader.matricula).length;
+    const opt = document.createElement("option");
+    opt.value = `TEAM:${leader.matricula}`;
+    opt.textContent = `${leader.tecnico} (${leader.matricula}) · ${memberCount} técnico${memberCount === 1 ? "" : "s"}`;
+    sel.appendChild(opt);
   });
 }
 
@@ -685,14 +724,229 @@ function searchByCode(code) {
   }
 }
 
+/* ---------- vista de grupo (por responsable o por provincia) ---------- */
+
+let currentGroup = null; // { members, selectedMonths: Set }
+
+function sortedMonthsDesc() {
+  return sheetNames.slice().sort((a, b) => monthIndexFromName(b) - monthIndexFromName(a));
+}
+
+function findEmployeeRowsByCode(code) {
+  const nq = normalize(code);
+  const allNames = Array.from(employeeMap.keys());
+  const match = allNames.find(n => normalize(n).includes(nq));
+  return match ? employeeMap.get(match) : null;
+}
+
+function buildProvinceSelect() {
+  const sel = document.getElementById("provinceSelect");
+  if (!sel) return;
+
+  const tecnicos = HIERARCHY_DATA.filter(d => d.nivel === "5 TEC" && d.provincia);
+  const byProvincia = new Map();
+  tecnicos.forEach(d => {
+    const key = d.provincia.trim();
+    if (!byProvincia.has(key)) byProvincia.set(key, []);
+    byProvincia.get(key).push(d);
+  });
+
+  const provincias = Array.from(byProvincia.keys()).sort((a, b) => a.localeCompare(b));
+  provincias.forEach(prov => {
+    const opt = document.createElement("option");
+    opt.value = prov;
+    const count = byProvincia.get(prov).length;
+    opt.textContent = `${titleCase(prov)} · ${count} técnico${count === 1 ? "" : "s"}`;
+    sel.appendChild(opt);
+  });
+}
+
+function titleCase(s) {
+  return s.toLowerCase().replace(/(^|\s)\p{L}/gu, c => c.toUpperCase());
+}
+
+let selectedLeaderCode = "";
+let selectedProvincia = "";
+
+function computeCombinedMembers(leaderCode, provincia) {
+  let members = leaderCode
+    ? HIERARCHY_DATA.filter(d => d.jde === leaderCode && d.matricula !== leaderCode)
+    : HIERARCHY_DATA.filter(d => d.nivel === "5 TEC");
+  if (provincia) {
+    members = members.filter(d => d.provincia && d.provincia.trim() === provincia);
+  }
+  return members;
+}
+
+function renderCombined() {
+  if (!selectedLeaderCode && !selectedProvincia) {
+    renderEmpty("Elige un responsable y/o una provincia para ver el grupo.");
+    return;
+  }
+  const leader = selectedLeaderCode ? HIERARCHY_DATA.find(d => d.nivel === "4 JDE" && d.matricula === selectedLeaderCode) : null;
+  if (selectedLeaderCode && !leader) { renderEmpty("No encontré este responsable."); return; }
+
+  const members = computeCombinedMembers(selectedLeaderCode, selectedProvincia);
+
+  let title, subtitle;
+  if (leader && selectedProvincia) {
+    title = `${leader.tecnico} · ${titleCase(selectedProvincia)}`;
+    subtitle = `${leader.matricula} · Responsable + provincia`;
+  } else if (leader) {
+    title = leader.tecnico;
+    subtitle = `${leader.matricula} · Responsable de equipo`;
+  } else {
+    title = titleCase(selectedProvincia);
+    subtitle = "Provincia (todos los responsables)";
+  }
+
+  if (members.length === 0) {
+    renderEmpty(`No hay técnicos que combinen ese responsable y esa provincia.`);
+    return;
+  }
+
+  renderGroup(title, subtitle, members);
+}
+
+function leaderNameFor(jdeCode) {
+  const leader = HIERARCHY_DATA.find(d => d.nivel === "4 JDE" && d.matricula === jdeCode);
+  return leader ? leader.tecnico : "—";
+}
+
+function renderGroup(title, subtitle, members) {
+  if (employeeMap.size === 0) {
+    renderEmpty("Todavía no hay datos cargados desde el Sheet.");
+    return;
+  }
+
+  const months = sortedMonthsDesc();
+  const defaultMonth = months[0] || "";
+  currentGroup = { members, selectedMonths: new Set(defaultMonth ? [defaultMonth] : []) };
+
+  const pills = months.map(m => `<div class="month-pill${m === defaultMonth ? " active" : ""}" data-month="${m}">${m}</div>`).join("");
+
+  const sortedMembers = members.slice().sort((a, b) => a.tecnico.localeCompare(b.tecnico));
+  const memberRows = sortedMembers.map(m => `
+    <tr class="member-row" data-code="${m.matricula}">
+      <td>${m.tecnico}</td>
+      <td>${m.matricula || "—"}</td>
+      <td>${leaderNameFor(m.jde)}</td>
+    </tr>
+  `).join("");
+
+  resultsEl.innerHTML = `
+    <div class="card">
+      <div class="employee-header">
+        <div>
+          <div class="employee-name">${title}</div>
+          <div class="employee-code">${subtitle}</div>
+        </div>
+        <div class="employee-code">${members.length} técnico${members.length === 1 ? "" : "s"} en el grupo</div>
+      </div>
+      <div class="section-label" style="margin-top:16px;">Meses a evaluar (elige uno o varios)</div>
+      <div class="month-pills" id="groupMonthPills">${pills}</div>
+      <div class="section-label" style="margin-top:16px;" id="groupStatsLabel"></div>
+      <div class="alert-grid" id="groupStatsGrid"></div>
+      <div class="section-label" style="margin-top:16px;">Técnicos del grupo · clic para ver su historial</div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Técnico</th><th>Código</th><th>Jefe técnico</th></tr></thead>
+          <tbody>${memberRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll("#groupMonthPills .month-pill").forEach(p => {
+    p.addEventListener("click", () => {
+      const m = p.getAttribute("data-month");
+      if (currentGroup.selectedMonths.has(m)) {
+        if (currentGroup.selectedMonths.size > 1) currentGroup.selectedMonths.delete(m);
+      } else {
+        currentGroup.selectedMonths.add(m);
+      }
+      p.classList.toggle("active", currentGroup.selectedMonths.has(m));
+      updateGroupStats();
+    });
+  });
+
+  document.querySelectorAll(".member-row").forEach(row => {
+    row.style.cursor = "pointer";
+    row.addEventListener("click", () => {
+      const code = row.getAttribute("data-code");
+      if (code) searchByCode(code);
+    });
+  });
+
+  updateGroupStats();
+}
+
+function updateGroupStats() {
+  if (!currentGroup) return;
+  const { members, selectedMonths } = currentGroup;
+  const months = Array.from(selectedMonths);
+  const total = members.length;
+
+  const mlvHeader = findHeader(h => normalize(h) === "ml-v");
+  const convHeader = findHeader(h => normalize(h) === "conv");
+  const cumHeader = findHeader(h => normalize(h).includes("cum") && !normalize(h).includes("incum"));
+  const pctRmHeader = findHeader(h => normalize(h) === "%rm");
+  const npsHeader = findHeader(h => normalize(h) === "nps");
+
+  let passMlv = 0, passConv = 0, passCum = 0, passRm = 0, passNps = 0, withData = 0;
+
+  members.forEach(m => {
+    const rows = findEmployeeRowsByCode(m.matricula) || [];
+    const monthRows = rows.filter(r => months.includes(r.__sheet));
+    if (monthRows.length === 0) return; // sin datos en los meses elegidos = no cumple
+    withData++;
+    // Cumple si NINGUNO de sus registros en los meses elegidos incumple el umbral.
+    if (!monthRows.some(r => isBad(r[mlvHeader], 7, false))) passMlv++;
+    if (!monthRows.some(r => isBad(r[convHeader], 15, false))) passConv++;
+    if (!monthRows.some(r => isBad(r[cumHeader], 90, false))) passCum++;
+    if (!monthRows.some(r => isBad(r[pctRmHeader], 89.5, false))) passRm++;
+    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps++;
+  });
+
+  const statDefs = [
+    { label: "ML-V", value: passMlv },
+    { label: "Conv", value: passConv },
+    { label: "%Cum", value: passCum },
+    { label: "%RM", value: passRm },
+    { label: "NPS", value: passNps }
+  ];
+
+  const grid = statDefs.map(s => `
+    <div class="alert-chip${s.value < total ? " bad" : ""}">
+      <div class="av">${s.value}/${total}</div>
+      <div class="al">${s.label}</div>
+    </div>
+  `).join("");
+
+  const monthsLabel = months.length === 1 ? months[0] : `${months.length} meses seleccionados`;
+  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${monthsLabel} (${withData}/${total} con datos en el período)`;
+  document.getElementById("groupStatsGrid").innerHTML = grid;
+}
+
 document.getElementById("hierarchySelect").addEventListener("change", e => {
-  searchByCode(e.target.value);
+  const val = e.target.value;
+  selectedLeaderCode = val.startsWith("TEAM:") ? val.slice(5) : "";
+  renderCombined();
+});
+
+document.getElementById("provinceSelect").addEventListener("change", e => {
+  selectedProvincia = e.target.value || "";
+  renderCombined();
 });
 
 searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
 document.getElementById("searchBtn").addEventListener("click", doSearch);
 document.getElementById("clearBtn").addEventListener("click", () => {
   searchBox.value = "";
+  document.getElementById("hierarchySelect").value = "";
+  document.getElementById("provinceSelect").value = "";
+  selectedLeaderCode = "";
+  selectedProvincia = "";
   renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
 });
 
@@ -706,6 +960,14 @@ function setTodayDate() {
 window.addEventListener("DOMContentLoaded", () => {
   setTodayDate();
   buildHierarchySelect();
+  buildProvinceSelect();
+  // Algunos navegadores restauran la última opción elegida en un <select> al
+  // recargar la página, pero sin disparar el evento "change". Forzamos que
+  // ambos buscadores arranquen vacíos para que coincidan con el estado real.
+  document.getElementById("hierarchySelect").value = "";
+  document.getElementById("provinceSelect").value = "";
+  selectedLeaderCode = "";
+  selectedProvincia = "";
   loadData();
 });
 </script>
