@@ -27,7 +27,10 @@
     display: flex; align-items: center; justify-content: center;
     color: #d4af37; font-weight: 700; font-size: 13px;
     flex-shrink: 0;
+    overflow: hidden;
+    background: #000;
   }
+  .logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
   .topbar h1 { font-size: 17px; margin: 0; color: #f5f1e8; font-weight: 700; }
   .topbar .sub { font-size: 11px; color: #a9a08a; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
 
@@ -186,7 +189,9 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="logo">✦</div>
+    <div class="logo" id="logoBox">
+      <img src="logo.png" alt="Aurum BC Security" onerror="this.remove(); document.getElementById('logoBox').textContent='✦';" />
+    </div>
     <div>
       <h1>Evolución Histórica por Empleado</h1>
       <div class="sub">Resumen App · Datos en vivo desde Google Sheets</div>
@@ -301,8 +306,10 @@ function parseGviz(text) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function fetchSheetOnce(name) {
-  const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1`;
-  const res = await fetch(url);
+  // Google cachea agresivamente esta URL. Agregamos un parámetro con la hora
+  // actual para forzar siempre una respuesta fresca del Sheet.
+  const url = `https://docs.google.com/spreadsheets/d/${FILE_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&headers=1&_ts=${Date.now()}`;
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   const text = await res.text();
   return parseGviz(text);
@@ -363,12 +370,13 @@ async function fetchSheet(name) {
 
 async function loadData() {
   try {
-    // Escalonamos ligeramente las peticiones para no saturar a Google con 12 a la vez.
-    const results = await Promise.all(MONTHS.map(async (m, i) => {
-      if (i > 0) await sleep(i * 120);
-      return fetchSheet(m);
-    }));
-    const sheets = results.filter(Boolean);
+    // Pedimos los meses uno por uno (no en paralelo) para evitar que Google
+    // bloquee alguna petición por exceso de peticiones simultáneas.
+    const sheets = [];
+    for (const m of MONTHS) {
+      const s = await fetchSheet(m);
+      if (s) sheets.push(s);
+    }
     if (sheets.length === 0) {
       throw new Error('No se pudo leer ninguna hoja. Verifica que el Google Sheet esté compartido como "Cualquiera con el enlace puede ver".');
     }
@@ -971,4 +979,23 @@ document.getElementById("clearBtn").addEventListener("click", () => {
 function setTodayDate() {
   const el = document.getElementById("todayDate");
   if (!el) return;
-  const
+  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  el.textContent = txt;
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  setTodayDate();
+  buildHierarchySelect();
+  buildProvinceSelect();
+  // Algunos navegadores restauran la última opción elegida en un <select> al
+  // recargar la página, pero sin disparar el evento "change". Forzamos que
+  // ambos buscadores arranquen vacíos para que coincidan con el estado real.
+  document.getElementById("hierarchySelect").value = "";
+  document.getElementById("provinceSelect").value = "";
+  selectedLeaderCode = "";
+  selectedProvincia = "";
+  loadData();
+});
+</script>
+</body>
+</html>
