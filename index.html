@@ -365,17 +365,35 @@ async function fetchSheet(name) {
       return obj;
     });
 
-  return { name, headers: finalHeaders, rows: parsedRows };
+  // Huella de la primera fila cruda (sin el nombre de mes) para poder
+  // detectar más adelante si Google nos devolvió, por error, los mismos
+  // datos de otra pestaña.
+  const fingerprint = rows.length ? rows[0].join("|") : "";
+
+  return { name, headers: finalHeaders, rows: parsedRows, fingerprint };
 }
 
 async function loadData() {
   try {
+    // Google, cuando le pedimos una pestaña que NO existe (por ejemplo
+    // "Agosto" antes de que se cree), en vez de dar error nos devuelve
+    // silenciosamente los datos de otra pestaña (normalmente la más
+    // reciente). Para detectarlo, primero pedimos una pestaña con un nombre
+    // inventado: lo que sea que Google nos devuelva ahí es su "relleno" por
+    // defecto, y descartamos cualquier mes cuyos datos coincidan con eso.
+    const probe = await fetchSheet("__NO_EXISTE__" + Date.now());
+    const fallbackFingerprint = probe ? probe.fingerprint : null;
+
     // Pedimos los meses uno por uno (no en paralelo) para evitar que Google
     // bloquee alguna petición por exceso de peticiones simultáneas.
     const sheets = [];
     for (const m of MONTHS) {
       const s = await fetchSheet(m);
-      if (s) sheets.push(s);
+      if (!s) continue;
+      if (fallbackFingerprint && s.fingerprint === fallbackFingerprint) {
+        continue; // esta pestaña todavía no existe de verdad
+      }
+      sheets.push(s);
     }
     if (sheets.length === 0) {
       throw new Error('No se pudo leer ninguna hoja. Verifica que el Google Sheet esté compartido como "Cualquiera con el enlace puede ver".');
