@@ -87,7 +87,7 @@
 
   .meta-line { font-size: 11.5px; color: #8a8371; margin-top: 12px; letter-spacing: .02em; }
 
-  select#hierarchySelect, select#provinceSelect {
+  select#hierarchySelect, select#provinceSelect, select.period-select {
     width: 100%;
     padding: 11px 14px;
     font-size: 14px;
@@ -97,7 +97,13 @@
     background: #0f0d0a;
     color: #f2ede1;
   }
-  select#hierarchySelect:focus, select#provinceSelect:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  select#hierarchySelect:focus, select#provinceSelect:focus, select.period-select:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+
+  .period-row { display: flex; align-items: center; gap: 10px; }
+  .period-row select.period-select { flex: 1; }
+  .period-sep { color: #8a8371; font-size: 13px; flex-shrink: 0; }
+
+  .back-btn { margin-bottom: 14px; }
 
   .month-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
   .month-pill {
@@ -244,6 +250,9 @@ let headers = [];
 let employeeMap = new Map();
 let employeeKey = "Técnico";
 let sheetNames = [];
+// Recuerda cómo volver a la vista anterior (grupo o lista de coincidencias)
+// cuando el usuario entra al detalle de un técnico.
+let backAction = null;
 
 const metaLine = document.getElementById('metaLine');
 const resultsEl = document.getElementById('results');
@@ -739,7 +748,10 @@ function renderEmployee(rawName) {
     `;
   }).join("");
 
+  const backButtonHtml = backAction ? `<button id="backBtn" class="secondary back-btn" type="button">← Volver</button>` : "";
+
   resultsEl.innerHTML = `
+    ${backButtonHtml}
     <div class="card">
       <div class="employee-header">
         <div>
@@ -760,6 +772,17 @@ function renderEmployee(rawName) {
 
     ${monthSections}
   `;
+
+  if (backAction) {
+    const btn = document.getElementById("backBtn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const fn = backAction;
+        backAction = null;
+        if (fn) fn();
+      });
+    }
+  }
 }
 
 function renderChips(matches, query) {
@@ -775,6 +798,7 @@ function renderChips(matches, query) {
   `;
   resultsEl.querySelectorAll(".chip").forEach(c => {
     c.addEventListener("click", () => {
+      backAction = () => renderChips(matches, query);
       searchBox.value = c.getAttribute("data-name");
       renderEmployee(c.getAttribute("data-name"));
     });
@@ -782,6 +806,7 @@ function renderChips(matches, query) {
 }
 
 function doSearch() {
+  backAction = null;
   const query = searchBox.value.trim();
   if (!query) { renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial."); return; }
   if (employeeMap.size === 0) { renderEmpty("Todavía no hay datos cargados desde el Sheet."); return; }
@@ -838,10 +863,14 @@ function searchByCode(code) {
 
 /* ---------- vista de grupo (por responsable o por provincia) ---------- */
 
-let currentGroup = null; // { members, selectedMonths: Set }
+let currentGroup = null; // { members, monthsAsc, selectedMonths: Set } — el período (Desde/Hasta) se traduce a selectedMonths
 
 function sortedMonthsDesc() {
   return sheetNames.slice().sort((a, b) => monthIndexFromName(b) - monthIndexFromName(a));
+}
+
+function sortedMonthsAsc() {
+  return sheetNames.slice().sort((a, b) => monthIndexFromName(a) - monthIndexFromName(b));
 }
 
 function findEmployeeRowsByCode(code) {
@@ -931,22 +960,26 @@ function renderGroup(title, subtitle, members) {
     return;
   }
 
-  const months = sortedMonthsDesc();
-  const defaultMonth = months[0] || "";
-  currentGroup = { members, selectedMonths: new Set(defaultMonth ? [defaultMonth] : []) };
+  const monthsAsc = sortedMonthsAsc();
+  const fromDefault = monthsAsc[0] || "";
+  const toDefault = monthsAsc[monthsAsc.length - 1] || "";
+  currentGroup = { members, monthsAsc, selectedMonths: new Set(monthsAsc) };
 
-  const pills = months.map(m => `<div class="month-pill${m === defaultMonth ? " active" : ""}" data-month="${m}">${m}</div>`).join("");
+  const monthOptions = monthsAsc.map(m => `<option value="${m}">${m}</option>`).join("");
+
+  const backButtonHtml = backAction ? `<button id="backBtn" class="secondary back-btn" type="button">← Volver</button>` : "";
 
   const sortedMembers = members.slice().sort((a, b) => a.tecnico.localeCompare(b.tecnico));
   const memberRows = sortedMembers.map(m => `
     <tr class="member-row" data-code="${m.matricula}">
-      <td>${m.tecnico}</td>
       <td>${m.matricula || "—"}</td>
+      <td>${m.tecnico}</td>
       <td>${leaderNameFor(m.jde)}</td>
     </tr>
   `).join("");
 
   resultsEl.innerHTML = `
+    ${backButtonHtml}
     <div class="card">
       <div class="employee-header">
         <div>
@@ -955,38 +988,71 @@ function renderGroup(title, subtitle, members) {
         </div>
         <div class="employee-code">${members.length} técnico${members.length === 1 ? "" : "s"} en el grupo</div>
       </div>
-      <div class="section-label" style="margin-top:16px;">Meses a evaluar (elige uno o varios)</div>
-      <div class="month-pills" id="groupMonthPills">${pills}</div>
+      <div class="section-label" style="margin-top:16px;">Periodo a evaluar</div>
+      <div class="period-row">
+        <select id="groupFromMonth" class="period-select">${monthOptions}</select>
+        <span class="period-sep">→</span>
+        <select id="groupToMonth" class="period-select">${monthOptions}</select>
+      </div>
       <div class="section-label" style="margin-top:16px;" id="groupStatsLabel"></div>
       <div class="alert-grid" id="groupStatsGrid"></div>
       <div class="section-label" style="margin-top:16px;">Técnicos del grupo · clic para ver su historial</div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Técnico</th><th>Código</th><th>Jefe técnico</th></tr></thead>
+          <thead><tr><th>Código</th><th>Técnico</th><th>Jefe técnico</th></tr></thead>
           <tbody>${memberRows}</tbody>
         </table>
       </div>
     </div>
   `;
 
-  document.querySelectorAll("#groupMonthPills .month-pill").forEach(p => {
-    p.addEventListener("click", () => {
-      const m = p.getAttribute("data-month");
-      if (currentGroup.selectedMonths.has(m)) {
-        if (currentGroup.selectedMonths.size > 1) currentGroup.selectedMonths.delete(m);
-      } else {
-        currentGroup.selectedMonths.add(m);
-      }
-      p.classList.toggle("active", currentGroup.selectedMonths.has(m));
-      updateGroupStats();
-    });
-  });
+  if (backAction) {
+    const btn = document.getElementById("backBtn");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const fn = backAction;
+        backAction = null;
+        if (fn) fn();
+      });
+    }
+  }
+
+  const fromSel = document.getElementById("groupFromMonth");
+  const toSel = document.getElementById("groupToMonth");
+  fromSel.value = fromDefault;
+  toSel.value = toDefault;
+
+  function onPeriodChange() {
+    const fromIdx = monthIndexFromName(fromSel.value);
+    const toIdx = monthIndexFromName(toSel.value);
+    const lo = Math.min(fromIdx, toIdx);
+    const hi = Math.max(fromIdx, toIdx);
+    currentGroup.selectedMonths = new Set(currentGroup.monthsAsc.filter(m => {
+      const idx = monthIndexFromName(m);
+      return idx >= lo && idx <= hi;
+    }));
+    updateGroupStats();
+  }
+  fromSel.addEventListener("change", onPeriodChange);
+  toSel.addEventListener("change", onPeriodChange);
 
   document.querySelectorAll(".member-row").forEach(row => {
     row.style.cursor = "pointer";
     row.addEventListener("click", () => {
       const code = row.getAttribute("data-code");
-      if (code) searchByCode(code);
+      if (!code) return;
+      backAction = () => {
+        renderGroup(title, subtitle, members);
+        const f = document.getElementById("groupFromMonth");
+        const t = document.getElementById("groupToMonth");
+        if (f) f.value = fromSel.value;
+        if (t) t.value = toSel.value;
+        if (f && t) {
+          const evt = new Event("change");
+          f.dispatchEvent(evt);
+        }
+      };
+      searchByCode(code);
     });
   });
 
@@ -1010,9 +1076,9 @@ function updateGroupStats() {
   members.forEach(m => {
     const rows = findEmployeeRowsByCode(m.matricula) || [];
     const monthRows = rows.filter(r => months.includes(r.__sheet));
-    if (monthRows.length === 0) return; // sin datos en los meses elegidos = no cumple
+    if (monthRows.length === 0) return; // sin datos en el período = no cumple
     withData++;
-    // Cumple si NINGUNO de sus registros en los meses elegidos incumple el umbral.
+    // Cumple si NINGUNO de sus registros en el período incumple el umbral.
     if (!monthRows.some(r => isBad(r[mlvHeader], 7, false))) passMlv++;
     if (!monthRows.some(r => isBad(r[convHeader], 15, false))) passConv++;
     if (!monthRows.some(r => isBad(r[cumHeader], 90, false))) passCum++;
@@ -1035,18 +1101,23 @@ function updateGroupStats() {
     </div>
   `).join("");
 
-  const monthsLabel = months.length === 1 ? months[0] : `${months.length} meses seleccionados`;
-  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${monthsLabel} (${withData}/${total} con datos en el período)`;
+  const monthsSorted = months.slice().sort((a, b) => monthIndexFromName(a) - monthIndexFromName(b));
+  const periodLabel = monthsSorted.length === 0 ? "sin meses"
+    : monthsSorted.length === 1 ? monthsSorted[0]
+    : `${monthsSorted[0]} → ${monthsSorted[monthsSorted.length - 1]}`;
+  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${periodLabel} (${withData}/${total} con datos en el período)`;
   document.getElementById("groupStatsGrid").innerHTML = grid;
 }
 
 document.getElementById("hierarchySelect").addEventListener("change", e => {
+  backAction = null;
   const val = e.target.value;
   selectedLeaderCode = val.startsWith("TEAM:") ? val.slice(5) : "";
   renderCombined();
 });
 
 document.getElementById("provinceSelect").addEventListener("change", e => {
+  backAction = null;
   selectedProvincia = e.target.value || "";
   renderCombined();
 });
@@ -1054,6 +1125,7 @@ document.getElementById("provinceSelect").addEventListener("change", e => {
 searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
 document.getElementById("searchBtn").addEventListener("click", doSearch);
 document.getElementById("clearBtn").addEventListener("click", () => {
+  backAction = null;
   searchBox.value = "";
   document.getElementById("hierarchySelect").value = "";
   document.getElementById("provinceSelect").value = "";
