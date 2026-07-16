@@ -315,18 +315,13 @@ async function fetchSheetOnce(name) {
   return parseGviz(text);
 }
 
-async function fetchSheet(name) {
-  const attempts = 4;
-  let parsed = null;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      parsed = await fetchSheetOnce(name);
-      break;
-    } catch (e) {
-      if (i < attempts - 1) await sleep(400 + i * 300);
-    }
+async function fetchSheetAttempt(name) {
+  let parsed;
+  try {
+    parsed = await fetchSheetOnce(name);
+  } catch (e) {
+    return null;
   }
-  if (!parsed) return null;
   let { cols, rows } = parsed;
 
   // Algunas pestañas tienen la celda de encabezado de la columna de fecha en
@@ -370,7 +365,28 @@ async function fetchSheet(name) {
   // datos de otra pestaña.
   const fingerprint = rows.length ? rows[0].join("|") : "";
 
-  return { name, headers: finalHeaders, rows: parsedRows, fingerprint };
+  return { name, headers: finalHeaders, rows: parsedRows, fingerprint, rawCount: rows.length };
+}
+
+async function fetchSheet(name) {
+  // Cuando una pestaña se está editando activamente, Google a veces devuelve
+  // una foto vieja/incompleta (por ejemplo 1 fila en vez de más de 100
+  // reales) aunque le pidamos datos frescos. Si el primer intento trae muy
+  // pocas filas, reintentamos varias veces y nos quedamos con la versión que
+  // trajo MÁS filas — casi siempre es la correcta.
+  let best = await fetchSheetAttempt(name);
+  const minRowsBeforeRetry = 10;
+  const extraAttempts = 4;
+  if (!best || best.rawCount < minRowsBeforeRetry) {
+    for (let i = 0; i < extraAttempts; i++) {
+      await sleep(350 + i * 250);
+      const result = await fetchSheetAttempt(name);
+      if (result && (!best || result.rawCount > best.rawCount)) {
+        best = result;
+      }
+    }
+  }
+  return best;
 }
 
 async function loadData() {
