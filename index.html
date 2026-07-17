@@ -251,6 +251,24 @@
   .alert-chip.bad { border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.05); }
   .alert-chip.bad .av { color: var(--bad); }
 
+  .tipbox {
+    position: fixed; z-index: 9999; display: none;
+    max-width: 320px; max-height: 260px; overflow-y: auto;
+    background: #14110a; border: 1px solid rgba(212,175,55,.35);
+    border-radius: 10px; padding: 10px 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5);
+    font-size: 12px; line-height: 1.5; color: #e8e2d0;
+    pointer-events: none;
+  }
+  .tipbox .tip-title { font-weight: 700; color: var(--gold-light); margin-bottom: 6px; font-size: 12.5px; }
+  .tipbox .tip-section { margin-bottom: 6px; }
+  .tipbox .tip-section:last-child { margin-bottom: 0; }
+  .tipbox .tip-section .tip-label { font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .04em; margin-bottom: 2px; }
+  .tipbox .tip-section.good .tip-label { color: var(--good); }
+  .tipbox .tip-section.bad .tip-label { color: var(--bad); }
+  .tipbox .tip-section.muted .tip-label { color: var(--muted); }
+  .tipbox .tip-names { color: #cfc9b8; }
+
   .hint { font-size: 12px; color: #6f6a5a; margin-top: 8px; }
 
   .month-title { font-size: 14px; font-weight: 700; color: var(--gold-light); }
@@ -308,6 +326,8 @@
 
     <div id="results"></div>
   </div>
+
+  <div id="tipBox" class="tipbox"></div>
 
 <script>
 const FILE_ID = "1UWfgzyAlu6sK6VLKP0Qoqhs31UfRju1J-zqaR8yuUng";
@@ -831,25 +851,37 @@ function renderEmployee(rawName) {
   }
   const monthsWithData = groupList.filter(g => g.rows.length > 0);
   const totalEvaluated = monthsWithData.length;
-  function countBadMonths(headerKey, threshold, orEqual) {
-    if (!headerKey) return 0;
-    return monthsWithData.filter(g => g.rows.some(r => isBad(r[headerKey], threshold, orEqual))).length;
+  function evalMonths(headerKey, threshold, orEqual) {
+    const bad = [], good = [];
+    if (!headerKey) return { count: 0, bad, good };
+    monthsWithData.forEach(g => {
+      const isBadMonth = g.rows.some(r => isBad(r[headerKey], threshold, orEqual));
+      (isBadMonth ? bad : good).push(g.sheet);
+    });
+    return { count: bad.length, bad, good };
   }
   const alertDefs = [
-    { label: "ML-V", count: countBadMonths(mlvHeader, 7, false) },
-    { label: "Conv", count: countBadMonths(convHeader, 15, false) },
-    { label: "%Cum", count: countBadMonths(cumHeader, 90, false) },
-    { label: "%RM", count: countBadMonths(pctRmHeader, 89.5, false) },
-    { label: "NPS", count: countBadMonths(npsHeader, 9.4, true) }
+    { label: "ML-V", ...evalMonths(mlvHeader, 7, false) },
+    { label: "Conv", ...evalMonths(convHeader, 15, false) },
+    { label: "%Cum", ...evalMonths(cumHeader, 90, false) },
+    { label: "%RM", ...evalMonths(pctRmHeader, 89.5, false) },
+    { label: "NPS", ...evalMonths(npsHeader, 9.4, true) }
   ];
-  const alertItems = alertDefs.map(a => `
-    <div class="alert-chip${a.count > 0 ? " bad" : ""}">
+  const alertItems = alertDefs.map(a => {
+    const sections = [];
+    sections.push(`<div class="tip-section bad"><div class="tip-label">No cumplen (${a.bad.length}/${totalEvaluated})</div><div class="tip-names">${a.bad.length ? escHtml(a.bad.join(", ")) : "—"}</div></div>`);
+    sections.push(`<div class="tip-section good"><div class="tip-label">Cumplen (${a.good.length}/${totalEvaluated})</div><div class="tip-names">${a.good.length ? escHtml(a.good.join(", ")) : "—"}</div></div>`);
+    const tooltipHtml = `<div class="tip-title">${escHtml(a.label)}</div>${sections.join("")}`;
+    const tipId = attachTip(tooltipHtml);
+    return `
+    <div class="alert-chip${a.count > 0 ? " bad" : ""}" data-tip-id="${tipId}">
       <div class="av">${a.count}/${totalEvaluated}</div>
       <div class="al">${a.label}</div>
     </div>
-  `).join("");
+  `;
+  }).join("");
   const alertSummary = totalEvaluated > 0
-    ? `<div class="section-label" style="margin-top:16px;">Resumen de alertas</div><div class="alert-grid">${alertItems}</div>`
+    ? `<div class="section-label" style="margin-top:16px;">Resumen de alertas · pasa el cursor sobre cada KPI para ver los meses</div><div class="alert-grid">${alertItems}</div>`
     : "";
 
   const monthSections = groupList.filter(g => g.rows.length > 0).map(g => {
@@ -1048,6 +1080,53 @@ function titleCase(s) {
 let selectedLeaderCode = "";
 let selectedProvincia = "";
 
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let tipData = {};
+let tipCounter = 0;
+function attachTip(html) {
+  const id = "tip" + (tipCounter++);
+  tipData[id] = html;
+  return id;
+}
+function positionTip(x, y) {
+  const box = document.getElementById("tipBox");
+  if (!box) return;
+  const pad = 14;
+  let left = x + pad;
+  let top = y + pad;
+  const rect = box.getBoundingClientRect();
+  if (left + rect.width > window.innerWidth - 8) left = Math.max(8, x - rect.width - pad);
+  if (top + rect.height > window.innerHeight - 8) top = Math.max(8, y - rect.height - pad);
+  box.style.left = left + "px";
+  box.style.top = top + "px";
+}
+function showTip(id, x, y) {
+  const box = document.getElementById("tipBox");
+  if (!box || !tipData[id]) return;
+  box.innerHTML = tipData[id];
+  box.style.display = "block";
+  positionTip(x, y);
+}
+function hideTip() {
+  const box = document.getElementById("tipBox");
+  if (box) box.style.display = "none";
+}
+document.addEventListener("mouseover", e => {
+  const el = e.target.closest("[data-tip-id]");
+  if (el) showTip(el.getAttribute("data-tip-id"), e.clientX, e.clientY);
+});
+document.addEventListener("mousemove", e => {
+  const el = e.target.closest("[data-tip-id]");
+  if (el) positionTip(e.clientX, e.clientY);
+});
+document.addEventListener("mouseout", e => {
+  const el = e.target.closest("[data-tip-id]");
+  if (el) hideTip();
+});
+
 function computeCombinedMembers(leaderCode, provincia) {
   let members = leaderCode
     ? HIERARCHY_DATA.filter(d => d.jde === leaderCode && d.matricula !== leaderCode)
@@ -1244,20 +1323,16 @@ function updateGroupStats() {
   });
 
   const grid = results.map(k => {
-    const lines = [];
-    lines.push(`Cumplen (${k.pass.length}/${total}):`);
-    lines.push(k.pass.length ? k.pass.join(", ") : "—");
-    lines.push("");
-    lines.push(`No cumplen (${k.fail.length}/${total}):`);
-    lines.push(k.fail.length ? k.fail.join(", ") : "—");
+    const sections = [];
+    sections.push(`<div class="tip-section good"><div class="tip-label">Cumplen (${k.pass.length}/${total})</div><div class="tip-names">${k.pass.length ? escHtml(k.pass.join(", ")) : "—"}</div></div>`);
+    sections.push(`<div class="tip-section bad"><div class="tip-label">No cumplen (${k.fail.length}/${total})</div><div class="tip-names">${k.fail.length ? escHtml(k.fail.join(", ")) : "—"}</div></div>`);
     if (k.noData.length) {
-      lines.push("");
-      lines.push(`Sin datos en el período (${k.noData.length}/${total}):`);
-      lines.push(k.noData.join(", "));
+      sections.push(`<div class="tip-section muted"><div class="tip-label">Sin datos (${k.noData.length}/${total})</div><div class="tip-names">${escHtml(k.noData.join(", "))}</div></div>`);
     }
-    const tooltip = lines.join("\n").replace(/"/g, "&quot;");
+    const tooltipHtml = `<div class="tip-title">${escHtml(k.label)}</div>${sections.join("")}`;
+    const tipId = attachTip(tooltipHtml);
     return `
-      <div class="alert-chip${k.pass.length < total ? " bad" : ""}" title="${tooltip}">
+      <div class="alert-chip${k.pass.length < total ? " bad" : ""}" data-tip-id="${tipId}">
         <div class="av">${k.pass.length}/${total}</div>
         <div class="al">${k.label}</div>
       </div>
