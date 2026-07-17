@@ -4,44 +4,76 @@
 <meta charset="UTF-8" />
 <title>Evolución Histórica por Empleado</title>
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --gold: #d4af37;
+    --gold-light: #f0d78a;
+    --gold-deep: #c9a227;
+    --ink: #f2ede1;
+    --muted: #8a8371;
+    --good: #34d399;
+    --bad: #f87171;
+  }
   * { box-sizing: border-box; }
+  html { scrollbar-color: #3a3323 #0b0b0c; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #33301f; border-radius: 999px; border: 2px solid #0b0b0c; }
+  ::-webkit-scrollbar-thumb:hover { background: #48412a; }
+
   body {
     margin: 0;
     padding: 0;
-    background: #0b0b0c;
-    color: #f2ede1;
+    background:
+      radial-gradient(1100px 520px at 50% -10%, rgba(212,175,55,.06), transparent 60%),
+      #0b0b0c;
+    color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 40px; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 48px; }
 
   .topbar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 18px 20px;
-    border-bottom: 1px solid #262117;
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 20px;
+    border-bottom: 1px solid #211d15;
+    background: linear-gradient(180deg, rgba(212,175,55,.05), transparent 70%);
     max-width: 1000px; margin: 0 auto;
+    position: sticky; top: 0; z-index: 5;
+    backdrop-filter: blur(6px);
   }
   .logo {
-    width: 34px; height: 34px; border-radius: 50%;
-    border: 1.5px solid #c9a227;
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1.5px solid var(--gold-deep);
     display: flex; align-items: center; justify-content: center;
-    color: #d4af37; font-weight: 700; font-size: 13px;
+    color: var(--gold); font-weight: 700; font-size: 13px;
     flex-shrink: 0;
     overflow: hidden;
     background: #000;
+    box-shadow: 0 0 0 4px rgba(212,175,55,.07), 0 4px 14px -4px rgba(0,0,0,.6);
   }
   .logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-  .topbar h1 { font-size: 17px; margin: 0; color: #f5f1e8; font-weight: 700; }
-  .topbar .sub { font-size: 11px; color: #a9a08a; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+  .topbar h1 { font-size: 18px; margin: 0; color: #f5f1e8; font-weight: 700; letter-spacing: -.01em; }
+  .topbar .sub { font-size: 10.5px; color: #a9a08a; letter-spacing: .09em; text-transform: uppercase; margin-top: 3px; }
 
-  .content { padding-top: 22px; }
+  .content { padding-top: 24px; }
 
   .card {
-    background: #16130e;
+    background: linear-gradient(180deg, #17140f, #141109);
     border: 1px solid #2a2419;
-    border-radius: 14px;
-    padding: 18px;
+    border-radius: 16px;
+    padding: 20px;
     margin-bottom: 16px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.02) inset, 0 10px 28px -18px rgba(0,0,0,.7);
+    animation: fadeInUp .28s ease both;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card { animation: none; }
   }
 
   .status-pill {
@@ -50,58 +82,76 @@
     border-radius: 999px; padding: 8px 14px;
     font-size: 12.5px; color: #b9c9bc; margin-bottom: 14px;
   }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 6px #34d399; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 6px var(--good); }
 
   .top-grid { display: grid; grid-template-columns: minmax(180px, 260px) 1fr; gap: 16px; align-items: stretch; }
   @media (max-width: 640px) { .top-grid { grid-template-columns: 1fr; } }
-  .date-card { display: flex; flex-direction: column; justify-content: center; }
-  .date-card .date-label { font-size: 10.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
-  .date-card .date-value { font-size: 16px; font-weight: 700; color: #f0d78a; text-transform: capitalize; }
+  .date-card { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .date-card .date-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .date-card .date-value { font-size: 16px; font-weight: 700; color: var(--gold-light); text-transform: capitalize; }
+  .date-card .date-time { font-size: 20px; font-weight: 700; color: #f5f1e8; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .date-card .date-location { font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: .03em; }
   .search-card { display: flex; flex-direction: column; justify-content: center; }
 
   .search-row { display: flex; gap: 8px; }
   input#searchBox {
     flex: 1;
-    padding: 11px 14px;
+    padding: 12px 15px;
     font-size: 14px;
     border: 1px solid #33301f;
-    border-radius: 9px;
+    border-radius: 10px;
     outline: none;
     background: #0f0d0a;
-    color: #f2ede1;
+    color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
   }
   input#searchBox::placeholder { color: #6f6a5a; }
-  input#searchBox:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  input#searchBox:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
   button {
-    padding: 11px 18px;
+    padding: 12px 18px;
     font-size: 14px;
     font-weight: 600;
-    border-radius: 9px;
+    border-radius: 10px;
     border: none;
-    background: linear-gradient(180deg, #e0bf4f, #c9a227);
+    background: linear-gradient(180deg, #e6c65c, #c9a227);
     color: #1a1608;
     cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    box-shadow: 0 6px 16px -8px rgba(212,175,55,.55);
   }
-  button.secondary { background: #1e1a12; color: #cfc7b0; border: 1px solid #33301f; }
-  button:hover { filter: brightness(1.08); }
+  button:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 10px 20px -10px rgba(212,175,55,.6); }
+  button:active { transform: translateY(0); filter: brightness(.98); }
+  button.secondary {
+    background: #1e1a12; color: #cfc7b0; border: 1px solid #33301f;
+    box-shadow: none;
+  }
+  button.secondary:hover { border-color: var(--gold-deep); color: #f2ede1; box-shadow: 0 6px 14px -10px rgba(0,0,0,.6); }
+  #cuentaToggleBtn { width: 100%; text-align: center; }
+  #cuentaToggleBtn.active-filter { border-color: var(--gold); color: var(--gold-light); background: #2a2413; }
 
-  .meta-line { font-size: 11.5px; color: #8a8371; margin-top: 12px; letter-spacing: .02em; }
+  .cuenta-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .01em; }
+  .cuenta-badge.si { color: var(--good); background: rgba(52,211,153,.14); }
+  .cuenta-badge.no { color: var(--bad); background: rgba(248,113,113,.14); }
+  .cuenta-badge.unk { color: var(--muted); background: rgba(138,131,113,.12); }
+
+  .meta-line { font-size: 11.5px; color: var(--muted); margin-top: 12px; letter-spacing: .02em; }
 
   select#hierarchySelect, select#provinceSelect, select.period-select {
     width: 100%;
-    padding: 11px 14px;
+    padding: 12px 15px;
     font-size: 14px;
     border: 1px solid #33301f;
-    border-radius: 9px;
+    border-radius: 10px;
     outline: none;
     background: #0f0d0a;
-    color: #f2ede1;
+    color: var(--ink);
+    transition: border-color .15s ease, box-shadow .15s ease;
   }
-  select#hierarchySelect:focus, select#provinceSelect:focus, select.period-select:focus { border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
+  select#hierarchySelect:focus, select#provinceSelect:focus, select.period-select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,.15); }
 
   .period-row { display: flex; align-items: center; gap: 10px; }
   .period-row select.period-select { flex: 1; }
-  .period-sep { color: #8a8371; font-size: 13px; flex-shrink: 0; }
+  .period-sep { color: var(--muted); font-size: 13px; flex-shrink: 0; }
 
   .back-btn { margin-bottom: 14px; }
 
@@ -115,9 +165,10 @@
     cursor: pointer;
     color: #cfc7b0;
     user-select: none;
+    transition: border-color .12s ease, color .12s ease, background .12s ease;
   }
-  .month-pill:hover { border-color: #d4af37; color: #f2ede1; }
-  .month-pill.active { background: #2a2413; border-color: #d4af37; color: #f0d78a; font-weight: 600; }
+  .month-pill:hover { border-color: var(--gold); color: #f2ede1; }
+  .month-pill.active { background: #2a2413; border-color: var(--gold); color: var(--gold-light); font-weight: 600; }
 
   .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .chip {
@@ -128,69 +179,83 @@
     font-size: 13px;
     cursor: pointer;
     color: #e7dfc9;
+    transition: border-color .12s ease, color .12s ease, transform .12s ease;
   }
-  .chip:hover { border-color: #d4af37; color: #f2ede1; }
+  .chip:hover { border-color: var(--gold); color: #f2ede1; transform: translateY(-1px); }
 
-  .state { text-align: center; color: #8a8371; font-size: 14px; padding: 26px 0; }
-  .state.error { color: #f87171; }
+  .state { text-align: center; color: var(--muted); font-size: 14px; padding: 30px 0; }
+  .state.error { color: var(--bad); }
 
   .section-label {
     font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    color: #c9a227; margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+    color: var(--gold-deep); margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
   }
-  .section-label::before { content: ""; width: 14px; height: 1.5px; background: #c9a227; display: inline-block; }
+  .section-label::before { content: ""; width: 14px; height: 1.5px; background: var(--gold-deep); display: inline-block; }
 
   .employee-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-  .employee-name { font-size: 17px; font-weight: 700; color: #f5f1e8; }
-  .employee-code { font-size: 11.5px; color: #8a8371; letter-spacing: .03em; }
+  .employee-name { font-size: 18px; font-weight: 700; color: #f5f1e8; letter-spacing: -.01em; }
+  .employee-code { font-size: 11.5px; color: var(--muted); letter-spacing: .03em; }
 
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-top: 16px; }
-  .stat { background: #100d09; border: 1px solid #26221749; border-radius: 12px; padding: 14px 16px; }
-  .stat .label { font-size: 10.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .07em; }
+  .stat { background: #100d09; border: 1px solid #26221749; border-radius: 12px; padding: 14px 16px; transition: border-color .15s ease; }
+  .stat .label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
   .stat .value { font-size: 22px; font-weight: 700; margin-top: 6px; color: #f5f1e8; }
-  .stat .value.good { color: #34d399; }
-  .stat .value.mid { color: #d4af37; }
-  .stat .value.bad { color: #f87171; }
+  .stat .value.good { color: var(--good); }
+  .stat .value.mid { color: var(--gold); }
+  .stat .value.bad { color: var(--bad); }
 
   .month-cards { display: flex; flex-direction: column; gap: 10px; }
   .month-card {
     background: #100d09; border: 1px solid #26221749; border-radius: 12px; padding: 14px 16px;
   }
   .month-card .month-card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-  .month-card .month-name { font-size: 15px; font-weight: 700; color: #f0d78a; }
-  .month-card .month-count { font-size: 11.5px; color: #8a8371; }
+  .month-card .month-name { font-size: 15px; font-weight: 700; color: var(--gold-light); }
+  .month-card .month-count { font-size: 11.5px; color: var(--muted); }
   .month-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr)); gap: 10px; text-align: left; }
   .month-metrics .m-value { font-size: 18px; font-weight: 700; }
-  .month-metrics .m-label { font-size: 10px; color: #8a8371; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .month-metrics .m-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
-  th, td { padding: 8px 9px; text-align: left; border-bottom: 1px solid #221e15; white-space: nowrap; color: #d9d2bf; }
-  th { background: #100d09; color: #8a8371; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
-  tr:hover td { background: #17140f; }
-  .table-scroll { overflow-x: auto; border-radius: 10px; border: 1px solid #26221749; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #1e1a12; white-space: nowrap; color: #d9d2bf; }
+  th {
+    background: linear-gradient(180deg, #131009, #100d09);
+    color: var(--muted); font-weight: 700; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: .05em; position: sticky; top: 0;
+    border-bottom: 1px solid #2a2419;
+  }
+  tbody tr { transition: background .1s ease; }
+  tbody tr:nth-child(even) td { background: rgba(255,255,255,.012); }
+  tr:hover td { background: #1a160f; }
+  .table-scroll { overflow-x: auto; border-radius: 12px; border: 1px solid #26221749; }
   table { margin-top: 0; }
 
-  .score-good { color: #34d399; font-weight: 700; }
-  .score-mid { color: #d4af37; font-weight: 700; }
-  .score-bad { color: #f87171; font-weight: 700; }
+  .member-row { cursor: pointer; }
+  .member-row:hover td { background: #1e1a12; }
 
-  .cell-alert { background: rgba(248,113,113,.22); color: #fecaca; font-weight: 700; }
+  .score-good { color: var(--good); font-weight: 700; }
+  .score-mid { color: var(--gold); font-weight: 700; }
+  .score-bad { color: var(--bad); font-weight: 700; }
+
+  .cell-alert { background: rgba(248,113,113,.16); color: #fecaca; font-weight: 700; box-shadow: inset 2px 0 0 rgba(248,113,113,.5); }
 
   .alert-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
   .alert-chip {
-    background: #100d09; border: 1px solid #26221749; border-radius: 8px;
-    padding: 6px 12px; min-width: 60px; text-align: center;
+    background: #100d09; border: 1px solid #26221749; border-radius: 10px;
+    padding: 7px 13px; min-width: 62px; text-align: center;
+    cursor: help;
+    transition: border-color .15s ease, transform .1s ease;
   }
-  .alert-chip .av { font-size: 14px; font-weight: 700; color: #f5f1e8; }
-  .alert-chip .al { font-size: 9.5px; color: #8a8371; text-transform: uppercase; letter-spacing: .05em; margin-top: 1px; }
-  .alert-chip.bad { border-color: rgba(248,113,113,.35); }
-  .alert-chip.bad .av { color: #f87171; }
+  .alert-chip:hover { transform: translateY(-1px); }
+  .alert-chip .av { font-size: 15px; font-weight: 700; color: #f5f1e8; }
+  .alert-chip .al { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+  .alert-chip.bad { border-color: rgba(248,113,113,.35); background: rgba(248,113,113,.05); }
+  .alert-chip.bad .av { color: var(--bad); }
 
   .hint { font-size: 12px; color: #6f6a5a; margin-top: 8px; }
 
-  .month-title { font-size: 14px; font-weight: 700; color: #f0d78a; }
-  .month-sub { font-size: 11.5px; color: #8a8371; margin-bottom: 10px; }
-  .month-section { border-left: 2px solid #c9a227; }
+  .month-title { font-size: 14px; font-weight: 700; color: var(--gold-light); }
+  .month-sub { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .month-section { border-left: 2px solid var(--gold-deep); }
 </style>
 </head>
 <body>
@@ -200,19 +265,21 @@
     </div>
     <div>
       <h1>Evolución Histórica por Empleado</h1>
-      <div class="sub">Resumen App · Datos en vivo desde Google Sheets</div>
+      <div class="sub">Aurum BC Security S.L</div>
     </div>
   </div>
 
   <div class="wrap content">
     <div class="top-grid">
       <div class="card date-card">
-        <div class="date-label">Fecha actual</div>
+        <div class="date-label">Fecha y hora actual</div>
         <div class="date-value" id="todayDate">—</div>
+        <div class="date-time" id="todayTime">—</div>
+        <div class="date-location" id="todayLocation">—</div>
       </div>
       <div class="card search-card">
         <div class="search-row">
-          <input id="searchBox" type="text" placeholder="Escribe un código de empleado o parte del nombre (ej. 313824, E-MD, Alexis)" autocomplete="off" />
+          <input id="searchBox" type="text" placeholder="Escribe un nombre o matrícula (ej. 313824, E-MD, Alexis)" autocomplete="off" />
           <button id="searchBtn">Buscar</button>
           <button id="clearBtn" class="secondary">Limpiar</button>
         </div>
@@ -221,17 +288,22 @@
     </div>
 
     <div class="card">
-      <div class="section-label">Buscar por responsable (jefe técnico)</div>
+      <div class="section-label">Responsable (Jefe Técnico)</div>
       <select id="hierarchySelect" autocomplete="off">
         <option value="">— Elige un responsable —</option>
       </select>
     </div>
 
     <div class="card">
-      <div class="section-label">Buscar por provincia</div>
+      <div class="section-label">Provincia</div>
       <select id="provinceSelect" autocomplete="off">
         <option value="">— Elige una provincia —</option>
       </select>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Técnicos que cuentan para factura</div>
+      <button id="cuentaToggleBtn" class="secondary" type="button">Mostrando a todos · toca para excluir a los que no cuentan en la factura</button>
     </div>
 
     <div id="results"></div>
@@ -245,6 +317,70 @@ const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto
 // Tomada de "2. CUADRANTE AURUM BC SECURITY SL" el 15/07/2026.
 const HIERARCHY_DATA = [{"nivel":"1 PM","jde":"CM9651","matricula":"BA8006","tecnico":"Blas Alvarez Melendez","provincia":"MÁLAGA"},{"nivel":"1 PM","jde":"CM9651","matricula":"CM9651","tecnico":"Cesar Eduardo Trujillo Di Biase","provincia":"MADRID"},{"nivel":"2 ADM","jde":"CM9651","matricula":"EQ5303","tecnico":"Estibaliz Balmaseda Russian","provincia":"MADRID"},{"nivel":"2 ADM","jde":"CM9651","matricula":"262876","tecnico":"Mercedes Teresa Savarino Sainz","provincia":"VALENCIA"},{"nivel":"2 ADM","jde":"CM9651","matricula":"294138","tecnico":"Denisa Carina Mignea","provincia":"VALENCIA"},{"nivel":"3 COORD","jde":"CM9651","matricula":"GD5381","tecnico":"Gustavo Alejandro Perez Villamil","provincia":"BARCELONA"},{"nivel":"3 COORD","jde":"CM9651","matricula":"JR9426","tecnico":"Jose Luis Osorio Sainz","provincia":"MADRID"},{"nivel":"3 COORD","jde":"CM9651","matricula":"JN4767","tecnico":"Jaime Arturo Almeida Shaigua","provincia":"BARCELONA"},{"nivel":"4 JDE","jde":"273371","matricula":"273371","tecnico":"Armando Jose Madrid Ruiz","provincia":"MADRID"},{"nivel":"4 JDE","jde":"286800","matricula":"286800","tecnico":"Ezequiel Pugliese","provincia":"BARCELONA"},{"nivel":"4 JDE","jde":"274629","matricula":"274629","tecnico":"Fernando David Alves Andujar","provincia":"VALENCIA"},{"nivel":"4 JDE","jde":"Q29994","matricula":"Q29994","tecnico":"Hefranyer Humberto Chacon Tovar","provincia":"MADRID"},{"nivel":"4 JDE","jde":"273379","matricula":"273379","tecnico":"Maikel Ramon Gutierrez Niño","provincia":"VALENCIA"},{"nivel":"4 JDE","jde":"Q28224","matricula":"Q28224","tecnico":"Manuel Enrique Sequeira Avila","provincia":"MADRID"},{"nivel":"4 JDE","jde":"239831","matricula":"239831","tecnico":"Pablo Marques Peñalver","provincia":"MURCIA"},{"nivel":"4 JDE","jde":"Q14001","matricula":"Q14001","tecnico":"Carlos Enrique Pernas Ortiz","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"315166","tecnico":"Adrian Arribas Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"279300","tecnico":"Alexander Xavier Hernandez Luque","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"313824","tecnico":"Alexis Alejandro Silva Silva","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"299538","tecnico":"Amado Rafael Lopez Rodriguez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"247470","tecnico":"Bernardo Antonio Marquez Houtmann","provincia":"MALLORCA"},{"nivel":"5 TEC","jde":"273379","matricula":"294898","tecnico":"Bogdan Sebastian Alves Calderon","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"333156","tecnico":"Brian Anthony Torres Fernandez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"247472","tecnico":"Carlos Enrique Marcano Morales","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"353969","tecnico":"Carlos Luis Sanchez Russo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"296625","tecnico":"Daniel Alejandro Laynez Angulo","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"338851","tecnico":"Daniel Alfonso Kolman Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"Q30909","tecnico":"Daniel Enrique Gonzalez Galavis","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"DY9618","tecnico":"Darwing Jose Ojeda Castillo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"336070","tecnico":"Edixon Jose Gonzalez Muñoz","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"290754","tecnico":"Ericsson Misael Pereira Caruso","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"334203","tecnico":"Giancarlo Izquierdo Mireles","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"286596","tecnico":"Henry Adrian Garcia Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"333528","tecnico":"Irving Daniel Villalobos Gonzalez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"JC5863","tecnico":"Jesus Marques Peñalver","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"308264","tecnico":"Jose Antonio Valero Gonzalez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"297373","tecnico":"Jose Daniel Spatuzzi Sanchez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"307113","tecnico":"Jose David Vergara Lopez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"336469","tecnico":"Jose Manuel Larez Salazar","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"301653","tecnico":"Juan Manuel Rodriguez Martinez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"318921","tecnico":"Junior Robert Moreno Martinez","provincia":"CASTELLoN"},{"nivel":"5 TEC","jde":"273379","matricula":"339251","tecnico":"Luis Antonio De Azevedo Mendoza","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"306055","tecnico":"Luis Augusto Nuñez Pacheco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"338071","tecnico":"Luis Enrique Goncalves Bencomo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"293800","tecnico":"Luis Jose Rovario Fermin","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"314303","tecnico":"Marco Cavallera Carvalho","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"276085","tecnico":"Natasha Emperatriz Adobbato Rojas","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"333158","tecnico":"Paloma Velez Gonzalez","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273371","matricula":"339886","tecnico":"Rafael Carmelo Osorio Sainz","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"314302","tecnico":"Ramon Edilio Varela","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"334204","tecnico":"Robert Armando Martinez Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q28224","matricula":"340320","tecnico":"Ronaldo Jose Shigueto Franco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"312756","tecnico":"Victor Gabriel Morales Lopez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"337583","tecnico":"Yelwuinger Yonfrander Rodriguez De Carvalho","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"312440","tecnico":"Yonathan Yoel Diaz Contreras","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"302786","tecnico":"Christian Alexander Reyna Serrano","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"343017","tecnico":"Hugo Alejandro Ledezma Sanllorente","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"336919","tecnico":"Jeyson Daniel Gainza Jaure","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"310655","tecnico":"Joan Francisco Valero Casanova","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"303760","tecnico":"Jose Vicente Toro Hernandez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"277029","tecnico":"Juan Victor Gonzalez Garcia","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"239831","matricula":"338045","tecnico":"Vincenzo Agostinho Velardita de Jesus Jardim","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356426","tecnico":"Abraham Jose Perez Naborre","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"356427","tecnico":"Andres Enrique Riccio Paredes","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356431","tecnico":"Armando Jose Martinez Castillo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"301193","tecnico":"Arturo Enrique Briceño Balza","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356432","tecnico":"Carlos Augusto Chipman Briceño","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356434","tecnico":"Carlos Jose Vargas Alvarez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q14001","matricula":"317492","tecnico":"Edwin Giovanny Tituaña Cayambe","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q29994","matricula":"310656","tecnico":"Eliyau Chocron Perez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356440","tecnico":"Hadid Jose Alvarez Flautes","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356441","tecnico":"Hector Rafael Perez Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"356443","tecnico":"Jesus Eduardo Monzon Oviedo","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"356444","tecnico":"Johann Alejandro Dean Vilchez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356445","tecnico":"Jose Manuel Casas Vilchez","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356448","tecnico":"Juan Carlos Hernandez Villegas","provincia":"MADRID"},{"nivel":"5 TEC","jde":"286800","matricula":"317024","tecnico":"Luis Alejandro Carmona Celis","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q29994","matricula":"356452","tecnico":"Luis Alfredo Peña Camacaro","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"339887","tecnico":"Manuel Antonio Marquez Calero","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356463","tecnico":"Maria Alejandra Perez Reyes","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"356455","tecnico":"Robert Xavier Tamayo Hernandez","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"274629","matricula":"295342","tecnico":"Roberto Gonzalez Guerrero","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"356458","tecnico":"Rodrigo Ignacio Fusco Zeiden","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356460","tecnico":"William Alexander Nieto Garcia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273371","matricula":"356980","tecnico":"Reyner Jesus Gonzalez Valderrama","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"286106","tecnico":"Enzo Guccione Kert","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"357636","tecnico":"Franco Maximiliano Maffioni","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"357633","tecnico":"Krystiam Jose Maicabare Francisco","provincia":"MADRID"},{"nivel":"5 TEC","jde":"239831","matricula":"357641","tecnico":"Matheo Ghio","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"273379","matricula":"337588","tecnico":"Carvic Ordoñez Salas","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"274629","matricula":"338399","tecnico":"Egler Jose Cadena Serpa","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"239831","matricula":"358721","tecnico":"Jose Alexander Garcia Rojas","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"358717","tecnico":"Jose Francisco Martinez Rubio","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"RR6743","tecnico":"Rafael Jose Marin Hidalgo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"358719","tecnico":"Ramon Esteban Garcia Atehortua","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"Q30910","tecnico":"Claudio Evaristo Febres Demartini","provincia":"TARRAGONA"},{"nivel":"5 TEC","jde":"286800","matricula":"294255","tecnico":"Daniel Ricardo Rocha Castillo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273379","matricula":"303768","tecnico":"Darwin Alexander Primera Wefer","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"291125","tecnico":"German Maximiliano Von Scheidt","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"342074","tecnico":"Mario Jesus Coba Rodriguez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"273371","matricula":"359191","tecnico":"Rafael Augusto La Salvia Boccia","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q29994","matricula":"359193","tecnico":"Ricardo Alberto De Jesus Sardinha","provincia":"MADRID"},{"nivel":"5 TEC","jde":"Q14001","matricula":"359189","tecnico":"Ricardo Nunes Blanco","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"359684","tecnico":"Jairo Salvador Marquez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"359682","tecnico":"Javier Eduardo Perez Corredor","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"360625","tecnico":"Jose Daniel Gonzalez Villamil","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"323696","tecnico":"Edgar Oliveira Romero","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"341284","tecnico":"Jorge Pablo Pugliese","provincia":"TARRAGONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"361439","tecnico":"Jimmy Quiroz Cozar","provincia":"GIRONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"345362","tecnico":"Yoanderson Yoel Coronado Ceballos","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"300077","tecnico":"Dylan Daniel Henriquez Soto","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"339878","tecnico":"Ender Daniel Jaimes Delgado","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"302154","tecnico":"Nicola Antonio Morsa Piñate","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"347178","tecnico":"Ricardo Enmanuel Gouveia Goncalves","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"274629","matricula":"295567","tecnico":"Sayded Youssef Khalil Cabrita","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"Q14001","matricula":"Q19010","tecnico":"Jorge Alfredo Arias Shaigua","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"286800","matricula":"321171","tecnico":"Jose Manuel Perez Mena","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"362045","tecnico":"Juan Manuel Barrios Llinas","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"Q09886","tecnico":"Oliver Eduardo Maia Lara","provincia":"MADRID"},{"nivel":"5 TEC","jde":"274629","matricula":"339884","tecnico":"Rafiq Ignacio Nara","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"286800","matricula":"326793","tecnico":"Jose Lorenzo Rodriguez Mata","provincia":"LLEIDA"},{"nivel":"5 TEC","jde":"273371","matricula":"362595","tecnico":"Adrian Jose Jimenez Zarzalejo","provincia":"MADRID"},{"nivel":"5 TEC","jde":"273379","matricula":"245715","tecnico":"Jefferson David Salas Sequea","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"239831","matricula":"362598","tecnico":"Jennyfer Maythe Oropeza de Garcia","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"273379","matricula":"362606","tecnico":"Juan Pablo Kolman Porras","provincia":"VALENCIA"},{"nivel":"5 TEC","jde":"286800","matricula":"362604","tecnico":"Jonayber Alexander Cardenas Torrealba","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363231","tecnico":"Nathan Contreras Ruiz","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363757","tecnico":"Cesar Jesus Romero Chavez","provincia":"GIRONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"LQ1546","tecnico":"Luigi Severino Rodriguez","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"363754","tecnico":"Ronald Vallejo Escobar","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"364181","tecnico":"Miguel Angel Arce Rojas","provincia":"ALICANTE"},{"nivel":"5 TEC","jde":"286800","matricula":"241180","tecnico":"Nelson Antonio Valls Arvelo","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"239831","matricula":"365178","tecnico":"Esther Alvarez Martin","provincia":"MURCIA"},{"nivel":"5 TEC","jde":"Q28224","matricula":"365180","tecnico":"Agustin Ezequiel Osses Marmol","provincia":"MALLORCA"},{"nivel":"5 TEC","jde":"274629","matricula":"367783","tecnico":"Henry David Martin Escalona","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"274954","tecnico":"Jesus Daniel Da Costa Fonseca","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367793","tecnico":"Jose Luis Martinez Tovar","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"367781","tecnico":"Luis Eduardo Castellanos Rodriguez","provincia":"TENERIFE"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367784","tecnico":"Raid Darsse Alouat","provincia":"BARCELONA"},{"nivel":"5 TEC","jde":"274629","matricula":"367782","tecnico":"Victor David Martin Escalona","provincia":"MÁLAGA"},{"nivel":"5 TEC","jde":"Q14001","matricula":"367794","tecnico":"Eloy Jesus Mata Briceño","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"286800","matricula":"","tecnico":"Alexis Arnaldo Figueroa Luis","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"Q14001","matricula":"334371","tecnico":"Lorenzo Aureliano Guzman Payano","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"286800","matricula":"368247","tecnico":"Eliomar Rafael Viloria Golindano","provincia":"LLEIDA"},{"nivel":"6 NI","jde":"Q14001","matricula":"368248","tecnico":"Francys Camacho Puentes","provincia":"BARCELONA"},{"nivel":"6 NI","jde":"274629","matricula":"368261","tecnico":"Oswal Alberto Rodriguez Morin","provincia":"MÁLAGA"},{"nivel":"7 NI","jde":"Q14001","matricula":"","tecnico":"Jesus Moises Ramirez Ruiz","provincia":"GIRONA"},{"nivel":"7 NI","jde":"286800","matricula":"304746","tecnico":"Joel Wilfrido Macias Velasquez","provincia":"BARCELONA"},{"nivel":"8 NI","jde":"274629","matricula":"","tecnico":"Jhonney Jesus Duarte Yanez","provincia":"VALENCIA"},{"nivel":"8 NI","jde":"274629","matricula":"","tecnico":"Ivan Jose Martinez Gutierrez","provincia":"VALENCIA"}];
 
+// Columna "Cuenta E" del Cuadrante ("Si"/"No"/null si la celda tenía #VALUE! o estaba vacía).
+// Foto de respaldo tomada el 16/07/2026 — se reemplaza en vivo por fetchCuentaEData()
+// al cargar la página, así que si el Cuadrante cambia (por ejemplo, un #VALUE! que se
+// resuelve a "Si Cuenta"), la próxima vez que se abra la página ya sale actualizado.
+let CUENTA_E_BY_MATRICULA = {"BA8006":"Si","CM9651":"Si","294138":"Si","EQ5303":"Si","262876":"Si","GD5381":"Si","JN4767":"Si","JR9426":"Si","273371":"Si","Q14001":"Si","286800":"Si","274629":"Si","Q29994":"Si","273379":"Si","Q28224":"Si","239831":"Si","356426":"No","315166":"Si","362595":"No","365180":null,"279300":"Si","313824":"Si","253411":null,"299538":"Si","356427":"No","356431":"No","301193":"Si","247470":"Si","294898":"Si","333156":"Si","356432":"No","247472":"Si","356434":"Si","353969":"Si","337588":"Si","363757":"No","302786":"Si","Q30910":"No","296625":"Si","338851":"Si","Q30909":"Si","294255":"No","303768":"Si","DY9618":"Si","300077":"Si","323696":"No","336070":"Si","317492":"Si","338399":"Si","368247":null,"310656":"Si","367794":null,"339878":"Si","286106":"No","290754":"Si","365178":null,"357636":"No","368248":null,"291125":"No","334203":"Si","356440":"Si","356441":"Si","286596":"Si","367783":null,"343017":"Si","333528":"Si","359684":"No","359682":"No","245715":"No","362598":"No","274954":null,"356443":"No","JC5863":"Si","336919":"Si","361439":"No","310655":"Si","356444":"No","362604":"No","Q19010":"No","341284":"No","358721":"No","308264":"Si","360625":"No","297373":"Si","307113":"Si","358717":"No","326793":"Si","367793":null,"356445":"No","336469":"Si","321171":"Si","303760":"Si","356448":"No","362045":"No","301653":"Si","362606":"No","277029":"Si","318921":"Si","357633":"No","334371":null,"LQ1546":"No","317024":"Si","356452":"No","339251":"Si","306055":"Si","367781":null,"338071":"Si","293800":"Si","339887":"Si","314303":"Si","356463":"No","342074":"Si","357641":"No","364181":"No","276085":"Si","363231":"No","241180":"No","302154":"Si","Q09886":"No","368261":null,"333158":"Si","359191":"No","339886":"Si","RR6743":"Si","339884":"Si","367784":null,"314302":"Si","358719":"No","356980":"No","359193":"No","347178":"Si","359189":"No","334204":"Si","356455":"No","295342":"Si","356458":"Si","363754":"No","340320":"Si","295567":"Si","367782":null,"312756":"Si","338045":"Si","356460":"No","337583":"Si","345362":"Si","312440":"Si","304746":null};
+let CUENTA_E_BY_NAME = {"Blas Alvarez Melendez":"Si","Cesar Eduardo Trujillo Di Biase":"Si","Denisa Carina Mignea":"Si","Estibaliz Balmaseda Russian":"Si","Mercedes Teresa Savarino Sainz":"Si","Gustavo Alejandro Perez Villamil":"Si","Jaime Arturo Almeida Shaigua":"Si","Jose Luis Osorio Sainz":"Si","Armando Jose Madrid Ruiz":"Si","Carlos Enrique Pernas Ortiz":"Si","Ezequiel Pugliese":"Si","Fernando David Alves Andujar":"Si","Hefranyer Humberto Chacon Tovar":"Si","Maikel Ramon Gutierrez Niño":"Si","Manuel Enrique Sequeira Avila":"Si","Pablo Marques Peñalver":"Si","Abraham Jose Perez Naborre":"No","Adrian Arribas Garcia":"Si","Adrian Jose Jimenez Zarzalejo":"No","Agustin Ezequiel Osses Marmol":null,"Alexander Xavier Hernandez Luque":"Si","Alexis Alejandro Silva Silva":"Si","Alexis Arnaldo Figueroa Luis":null,"Amado Rafael Lopez Rodriguez":"Si","Andres Enrique Riccio Paredes":"No","Armando Jose Martinez Castillo":"No","Arturo Enrique Briceño Balza":"Si","Bernardo Antonio Marquez Houtmann":"Si","Bogdan Sebastian Alves Calderon":"Si","Brian Anthony Torres Fernandez":"Si","Carlos Augusto Chipman Briceño":"No","Carlos Enrique Marcano Morales":"Si","Carlos Jose Vargas Alvarez":"Si","Carlos Luis Sanchez Russo":"Si","Carvic Ordoñez Salas":"Si","Cesar Jesus Romero Chavez":"No","Christian Alexander Reyna Serrano":"Si","Claudio Evaristo Febres Demartini":"No","Daniel Alejandro Laynez Angulo":"Si","Daniel Alfonso Kolman Gonzalez":"Si","Daniel Enrique Gonzalez Galavis":"Si","Daniel Ricardo Rocha Castillo":"No","Darwin Alexander Primera Wefer":"Si","Darwing Jose Ojeda Castillo":"Si","Dylan Daniel Henriquez Soto":"Si","Edgar Oliveira Romero":"No","Edixon Jose Gonzalez Muñoz":"Si","Edwin Giovanny Tituaña Cayambe":"Si","Egler Jose Cadena Serpa":"Si","Eliomar Rafael Viloria Golindano":null,"Eliyau Chocron Perez":"Si","Eloy Jesus Mata Briceño":null,"Ender Daniel Jaimes Delgado":"Si","Enzo Guccione Kert":"No","Ericsson Misael Pereira Caruso":"Si","Esther Alvarez Martin":null,"Franco Maximiliano Maffioni":"No","Francys Camacho Puentes":null,"German Maximiliano Von Scheidt":"No","Giancarlo Izquierdo Mireles":"Si","Hadid Jose Alvarez Flautes":"Si","Hector Rafael Perez Garcia":"Si","Henry Adrian Garcia Gonzalez":"Si","Henry David Martin Escalona":null,"Hugo Alejandro Ledezma Sanllorente":"Si","Irving Daniel Villalobos Gonzalez":"Si","Jairo Salvador Marquez":"No","Javier Eduardo Perez Corredor":"No","Jefferson David Salas Sequea":"No","Jennyfer Maythe Oropeza de Garcia":"No","Jesus Daniel Da Costa Fonseca":null,"Jesus Eduardo Monzon Oviedo":"No","Jesus Marques Peñalver":"Si","Jeyson Daniel Gainza Jaure":"Si","Jimmy Quiroz Cozar":"No","Joan Francisco Valero Casanova":"Si","Johann Alejandro Dean Vilchez":"No","Jonayber Alexander Cardenas Torrealba":"No","Jorge Alfredo Arias Shaigua":"No","Jorge Pablo Pugliese":"No","Jose Alexander Garcia Rojas":"No","Jose Antonio Valero Gonzalez":"Si","Jose Daniel Gonzalez Villamil":"No","Jose Daniel Spatuzzi Sanchez":"Si","Jose David Vergara Lopez":"Si","Jose Francisco Martinez Rubio":"No","Jose Lorenzo Rodriguez Mata":"Si","Jose Luis Martinez Tovar":null,"Jose Manuel Casas Vilchez":"No","Jose Manuel Larez Salazar":"Si","Jose Manuel Perez Mena":"Si","Jose Vicente Toro Hernandez":"Si","Juan Carlos Hernandez Villegas":"No","Juan Manuel Barrios Llinas":"No","Juan Manuel Rodriguez Martinez":"Si","Juan Pablo Kolman Porras":"No","Juan Victor Gonzalez Garcia":"Si","Junior Robert Moreno Martinez":"Si","Krystiam Jose Maicabare Francisco":"No","Lorenzo Aureliano Guzman Payano":null,"Luigi Severino Rodriguez":"No","Luis Alejandro Carmona Celis":"Si","Luis Alfredo Peña Camacaro":"No","Luis Antonio De Azevedo Mendoza":"Si","Luis Augusto Nuñez Pacheco":"Si","Luis Eduardo Castellanos Rodriguez":null,"Luis Enrique Goncalves Bencomo":"Si","Luis Jose Rovario Fermin":"Si","Manuel Antonio Marquez Calero":"Si","Marco Cavallera Carvalho":"Si","Maria Alejandra Perez Reyes":"No","Mario Jesus Coba Rodriguez":"Si","Matheo Ghio":"No","Miguel Angel Arce Rojas":"No","Natasha Emperatriz Adobbato Rojas":"Si","Nathan Contreras Ruiz":"No","Nelson Antonio Valls Arvelo":"No","Nicola Antonio Morsa Piñate":"Si","Oliver Eduardo Maia Lara":"No","Oswal Alberto Rodriguez Morin":null,"Paloma Velez Gonzalez":"Si","Rafael Augusto La Salvia Boccia":"No","Rafael Carmelo Osorio Sainz":"Si","Rafael Jose Marin Hidalgo":"Si","Rafiq Ignacio Nara":"Si","Raid Darsse Alouat":null,"Ramon Edilio Varela":"Si","Ramon Esteban Garcia Atehortua":"No","Reyner Jesus Gonzalez Valderrama":"No","Ricardo Alberto De Jesus Sardinha":"No","Ricardo Enmanuel Gouveia Goncalves":"Si","Ricardo Nunes Blanco":"No","Robert Armando Martinez Garcia":"Si","Robert Xavier Tamayo Hernandez":"No","Roberto Gonzalez Guerrero":"Si","Rodrigo Ignacio Fusco Zeiden":"Si","Ronald Vallejo Escobar":"No","Ronaldo Jose Shigueto Franco":"Si","Sayded Youssef Khalil Cabrita":"Si","Victor David Martin Escalona":null,"Victor Gabriel Morales Lopez":"Si","Vincenzo Agostinho Velardita de Jesus Jardim":"Si","William Alexander Nieto Garcia":"No","Yelwuinger Yonfrander Rodriguez De Carvalho":"Si","Yoanderson Yoel Coronado Ceballos":"Si","Yonathan Yoel Diaz Contreras":"Si","Jesus Moises Ramirez Ruiz":null,"Joel Wilfrido Macias Velasquez":null,"Jhonney Jesus Duarte Yanez":null,"Ivan Jose Martinez Gutierrez":null};
+
+function cuentaEFor(person) {
+  if (!person) return null;
+  if (person.matricula && CUENTA_E_BY_MATRICULA.hasOwnProperty(person.matricula)) {
+    return CUENTA_E_BY_MATRICULA[person.matricula];
+  }
+  if (person.tecnico && CUENTA_E_BY_NAME.hasOwnProperty(person.tecnico)) {
+    return CUENTA_E_BY_NAME[person.tecnico];
+  }
+  return null;
+}
+
+const CUADRANTE_FILE_ID = "1HqOI_kN10tAnBmeTrPqAklEa4f-1-DWQ";
+const CUADRANTE_GID = "1487298738";
+
+// Trae en vivo la columna "Cuenta E" (y "Matricula"/"Tecnico" para poder
+// cruzarla) directamente del Cuadrante, para que si alguien pasa de
+// "#VALUE!" a "Si Cuenta"/"No cuenta" (o cambia de estado) se refleje solo.
+// Si falla (sin permisos, sin red, etc.) se mantiene la foto de respaldo
+// embebida arriba y la app sigue funcionando igual.
+async function fetchCuentaEData() {
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${CUADRANTE_FILE_ID}/gviz/tq?tqx=out:json&gid=${CUADRANTE_GID}&headers=1&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const { cols, rows } = parseGviz(text);
+    const idxMatricula = cols.findIndex(c => normalize(c) === "matricula");
+    const idxTecnico = cols.findIndex(c => normalize(c) === "tecnico");
+    const idxCuentaE = cols.findIndex(c => normalize(c) === "cuenta e");
+    if (idxMatricula === -1 || idxTecnico === -1 || idxCuentaE === -1) return;
+
+    const byMatricula = {};
+    const byName = {};
+    rows.forEach(r => {
+      const mat = (r[idxMatricula] || "").toString().trim();
+      const name = (r[idxTecnico] || "").toString().trim();
+      const raw = (r[idxCuentaE] || "").toString().trim().toLowerCase();
+      let val = null;
+      if (raw === "si cuenta") val = "Si";
+      else if (raw === "no cuenta") val = "No";
+      if (mat) byMatricula[mat] = val;
+      if (name) byName[name] = val;
+    });
+
+    // Solo reemplazamos si de verdad trajimos datos, para no borrar la foto
+    // de respaldo con una respuesta vacía o incompleta.
+    if (Object.keys(byMatricula).length > 0) {
+      CUENTA_E_BY_MATRICULA = byMatricula;
+      CUENTA_E_BY_NAME = byName;
+      // Si ya hay un grupo abierto en pantalla, lo refrescamos con el dato fresco.
+      if (currentGroup) updateGroupStats();
+    }
+  } catch (e) {
+    // Sin conexión con el Cuadrante: seguimos con la foto de respaldo.
+  }
+}
+
 let allRows = [];
 let headers = [];
 let employeeMap = new Map();
@@ -253,6 +389,9 @@ let sheetNames = [];
 // Recuerda cómo volver a la vista anterior (grupo o lista de coincidencias)
 // cuando el usuario entra al detalle de un técnico.
 let backAction = null;
+// Filtro de plantilla: si es true, se excluye a quienes "No cuenta" (columna
+// "Cuenta E" del Cuadrante) de los grupos por responsable/provincia.
+let onlyCuenta = false;
 
 const metaLine = document.getElementById('metaLine');
 const resultsEl = document.getElementById('results');
@@ -507,7 +646,7 @@ function processContent(sheets) {
 
   metaLine.textContent = "";
 
-  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
+  renderEmpty("Escribe un nombre o matrícula y pulsa Buscar para ver su historial.");
 }
 
 /* ---------- rendering ---------- */
@@ -808,7 +947,7 @@ function renderChips(matches, query) {
 function doSearch() {
   backAction = null;
   const query = searchBox.value.trim();
-  if (!query) { renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial."); return; }
+  if (!query) { renderEmpty("Escribe un nombre o matrícula y pulsa Buscar para ver su historial."); return; }
   if (employeeMap.size === 0) { renderEmpty("Todavía no hay datos cargados desde el Sheet."); return; }
 
   const nq = normalize(query);
@@ -818,7 +957,7 @@ function doSearch() {
 
   const matches = allNames.filter(n => normalize(n).includes(nq));
   if (matches.length === 0) {
-    renderEmpty(`No encontré ningún empleado que coincida con "${query}".`);
+    renderEmpty(`No hay datos en la búsqueda para "${query}".`);
   } else if (matches.length === 1) {
     renderEmployee(matches[0]);
   } else {
@@ -916,6 +1055,9 @@ function computeCombinedMembers(leaderCode, provincia) {
   if (provincia) {
     members = members.filter(d => d.provincia && d.provincia.trim() === provincia);
   }
+  if (onlyCuenta) {
+    members = members.filter(d => cuentaEFor(d) !== "No");
+  }
   return members;
 }
 
@@ -970,13 +1112,20 @@ function renderGroup(title, subtitle, members) {
   const backButtonHtml = backAction ? `<button id="backBtn" class="secondary back-btn" type="button">← Volver</button>` : "";
 
   const sortedMembers = members.slice().sort((a, b) => a.tecnico.localeCompare(b.tecnico));
-  const memberRows = sortedMembers.map(m => `
+  const memberRows = sortedMembers.map(m => {
+    const cuenta = cuentaEFor(m);
+    const cuentaBadge = cuenta === "Si" ? `<span class="cuenta-badge si">Cuenta</span>`
+      : cuenta === "No" ? `<span class="cuenta-badge no">No cuenta</span>`
+      : `<span class="cuenta-badge unk">—</span>`;
+    return `
     <tr class="member-row" data-code="${m.matricula}">
       <td>${m.matricula || "—"}</td>
       <td>${m.tecnico}</td>
       <td>${leaderNameFor(m.jde)}</td>
+      <td>${cuentaBadge}</td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   resultsEl.innerHTML = `
     ${backButtonHtml}
@@ -999,7 +1148,7 @@ function renderGroup(title, subtitle, members) {
       <div class="section-label" style="margin-top:16px;">Técnicos del grupo · clic para ver su historial</div>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Código</th><th>Técnico</th><th>Jefe técnico</th></tr></thead>
+          <thead><tr><th>Código</th><th>Técnico</th><th>Jefe técnico</th><th>Cuenta E</th></tr></thead>
           <tbody>${memberRows}</tbody>
         </table>
       </div>
@@ -1071,41 +1220,55 @@ function updateGroupStats() {
   const pctRmHeader = findHeader(h => normalize(h) === "%rm");
   const npsHeader = findHeader(h => normalize(h) === "nps");
 
-  let passMlv = 0, passConv = 0, passCum = 0, passRm = 0, passNps = 0, withData = 0;
+  const kpiDefs = [
+    { label: "ML-V", header: mlvHeader, threshold: 7, orEqual: false },
+    { label: "Conv", header: convHeader, threshold: 15, orEqual: false },
+    { label: "%Cum", header: cumHeader, threshold: 90, orEqual: false },
+    { label: "%RM", header: pctRmHeader, threshold: 89.5, orEqual: false },
+    { label: "NPS", header: npsHeader, threshold: 9.4, orEqual: true }
+  ];
+  const results = kpiDefs.map(k => ({ ...k, pass: [], fail: [], noData: [] }));
 
+  let withData = 0;
   members.forEach(m => {
     const rows = findEmployeeRowsByCode(m.matricula) || [];
     const monthRows = rows.filter(r => months.includes(r.__sheet));
-    if (monthRows.length === 0) return; // sin datos en el período = no cumple
-    withData++;
-    // Cumple si NINGUNO de sus registros en el período incumple el umbral.
-    if (!monthRows.some(r => isBad(r[mlvHeader], 7, false))) passMlv++;
-    if (!monthRows.some(r => isBad(r[convHeader], 15, false))) passConv++;
-    if (!monthRows.some(r => isBad(r[cumHeader], 90, false))) passCum++;
-    if (!monthRows.some(r => isBad(r[pctRmHeader], 89.5, false))) passRm++;
-    if (!monthRows.some(r => isBad(r[npsHeader], 9.4, true))) passNps++;
+    const hasData = monthRows.length > 0;
+    if (hasData) withData++;
+    results.forEach(k => {
+      if (!hasData) { k.noData.push(m.tecnico); return; }
+      // Cumple si NINGUNO de sus registros en el período incumple el umbral.
+      const bad = monthRows.some(r => isBad(r[k.header], k.threshold, k.orEqual));
+      if (bad) k.fail.push(m.tecnico); else k.pass.push(m.tecnico);
+    });
   });
 
-  const statDefs = [
-    { label: "ML-V", value: passMlv },
-    { label: "Conv", value: passConv },
-    { label: "%Cum", value: passCum },
-    { label: "%RM", value: passRm },
-    { label: "NPS", value: passNps }
-  ];
-
-  const grid = statDefs.map(s => `
-    <div class="alert-chip${s.value < total ? " bad" : ""}">
-      <div class="av">${s.value}/${total}</div>
-      <div class="al">${s.label}</div>
-    </div>
-  `).join("");
+  const grid = results.map(k => {
+    const lines = [];
+    lines.push(`Cumplen (${k.pass.length}/${total}):`);
+    lines.push(k.pass.length ? k.pass.join(", ") : "—");
+    lines.push("");
+    lines.push(`No cumplen (${k.fail.length}/${total}):`);
+    lines.push(k.fail.length ? k.fail.join(", ") : "—");
+    if (k.noData.length) {
+      lines.push("");
+      lines.push(`Sin datos en el período (${k.noData.length}/${total}):`);
+      lines.push(k.noData.join(", "));
+    }
+    const tooltip = lines.join("\n").replace(/"/g, "&quot;");
+    return `
+      <div class="alert-chip${k.pass.length < total ? " bad" : ""}" title="${tooltip}">
+        <div class="av">${k.pass.length}/${total}</div>
+        <div class="al">${k.label}</div>
+      </div>
+    `;
+  }).join("");
 
   const monthsSorted = months.slice().sort((a, b) => monthIndexFromName(a) - monthIndexFromName(b));
   const periodLabel = monthsSorted.length === 0 ? "sin meses"
     : monthsSorted.length === 1 ? monthsSorted[0]
     : `${monthsSorted[0]} → ${monthsSorted[monthsSorted.length - 1]}`;
-  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${periodLabel} (${withData}/${total} con datos en el período)`;
+  document.getElementById("groupStatsLabel").textContent = `Cumplimiento del grupo · ${periodLabel} (${withData}/${total} con datos en el período) · pasa el cursor sobre cada KPI para ver los nombres`;
   document.getElementById("groupStatsGrid").innerHTML = grid;
 }
 
@@ -1122,6 +1285,22 @@ document.getElementById("provinceSelect").addEventListener("change", e => {
   renderCombined();
 });
 
+function updateCuentaToggleLabel() {
+  const btn = document.getElementById("cuentaToggleBtn");
+  if (!btn) return;
+  btn.textContent = onlyCuenta
+    ? `Mostrando solo los que cuentan en la factura · toca para incluir a todos`
+    : `Mostrando a todos · toca para excluir a los que no cuentan en la factura`;
+  btn.classList.toggle("active-filter", onlyCuenta);
+}
+
+document.getElementById("cuentaToggleBtn").addEventListener("click", () => {
+  backAction = null;
+  onlyCuenta = !onlyCuenta;
+  updateCuentaToggleLabel();
+  renderCombined();
+});
+
 searchBox.addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
 document.getElementById("searchBtn").addEventListener("click", doSearch);
 document.getElementById("clearBtn").addEventListener("click", () => {
@@ -1131,18 +1310,38 @@ document.getElementById("clearBtn").addEventListener("click", () => {
   document.getElementById("provinceSelect").value = "";
   selectedLeaderCode = "";
   selectedProvincia = "";
-  renderEmpty("Escribe un código de empleado (o parte del nombre) y pulsa Buscar para ver su historial.");
+  onlyCuenta = false;
+  updateCuentaToggleLabel();
+  renderEmpty("Escribe un nombre o matrícula y pulsa Buscar para ver su historial.");
 });
 
 function setTodayDate() {
   const el = document.getElementById("todayDate");
-  if (!el) return;
-  const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  el.textContent = txt;
+  if (el) {
+    const txt = new Date().toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    el.textContent = txt;
+  }
+  const timeEl = document.getElementById("todayTime");
+  if (timeEl) {
+    const timeTxt = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    timeEl.textContent = timeTxt;
+  }
+  const locEl = document.getElementById("todayLocation");
+  if (locEl) {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      const parts = tz.split("/");
+      const city = (parts[parts.length - 1] || tz).replace(/_/g, " ");
+      locEl.textContent = city ? `📍 ${city}` : "";
+    } catch (e) {
+      locEl.textContent = "";
+    }
+  }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
   setTodayDate();
+  setInterval(setTodayDate, 30000);
   buildHierarchySelect();
   buildProvinceSelect();
   // Algunos navegadores restauran la última opción elegida en un <select> al
@@ -1152,6 +1351,9 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("provinceSelect").value = "";
   selectedLeaderCode = "";
   selectedProvincia = "";
+  onlyCuenta = false;
+  updateCuentaToggleLabel();
+  fetchCuentaEData(); // en paralelo, no bloquea la carga principal
   loadData();
 });
 </script>
